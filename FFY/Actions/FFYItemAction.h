@@ -1,0 +1,33 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "FFY/FFYAction.h"
+#include "FFYItemAction.generated.h"
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnItemActionUse, FName, ID, AFFYBattleCharacter*, User, AFFYBattleCharacter*, Target);
+
+/**
+ * 
+ */
+UCLASS()
+class FFY_API AFFYItemAction : public AFFYAction
+{
+	GENERATED_BODY()
+
+public:
+	AFFYItemAction();
+	
+	//DELEGATE:
+	FOnItemActionUse OnItemActionUse;
+	//-----
+
+	//Set outside with select event
+	FName UseItemID;
+
+	virtual void ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattleCharacter*> Targets) override;
+	virtual void ExecuteAction(FBattleCharacterData& ActionOwner, TArray<FBattleCharacterData>& Targets) override;
+	virtual void Redirect(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattleCharacter*> Targets) override;
+	virtual void Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target) override;
+};
