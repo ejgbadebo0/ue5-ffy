@@ -6,6 +6,9 @@
 #include "FFYActionContainer.h"
 #include "FFYBattleCharacter.h"
 #include "FFYBattleCharacterAnimInstance.h"
+#include "AI/NavigationSystemBase.h"
+#include "GameFramework/GameModeBase.h"
+#include "Kismet/GameplayStatics.h"
 
 
 float AFFYAction::GetCalculatedActionValue(AFFYBattleCharacter* ActionOwner)
@@ -51,6 +54,8 @@ void AFFYAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFFYBatt
 		{
 			//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Silver, "ANIM INSTANCE VALID: Play Montage");
 			AnimInstance->PlayActionMontage_Implementation(Label, (Targets.Num() > 1));
+
+			ActionOwner->ActionUsed_Implementation((MenuLabel != NAME_None) ? MenuLabel : Label, ActionOwner->ActorHasTag(FName("Enemy")));
 		}
 	}
 	else

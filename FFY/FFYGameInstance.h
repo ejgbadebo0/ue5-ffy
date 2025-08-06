@@ -10,6 +10,7 @@
 #include "FFYBattleEvents.h"
 #include "FFYCharacter.h"
 #include "FFYTransitions.h"
+#include "IDetailTreeNode.h"
 #include "Engine/GameInstance.h"
 #include "Engine/DataTable.h"
 #include "FFYGameInstance.generated.h"
@@ -164,6 +165,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Inventory") 
 	void AddToInventory(FItemData InventoryItem, int32 Amount);
 	
+
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (RowType = "BattleCharacterData"))
 	FDataTableRowHandle PartyTableHandle;
 
@@ -210,5 +213,18 @@ public:
 
 	virtual void
 	UseInventoryItem_Implementation(FName ID, AFFYBattleCharacter* Source, AFFYBattleCharacter* Target) override;
+
+	virtual FName GetItemName_Implementation(FName ID) override
+	{
+		FItemData* Item = ItemsTableHandle.DataTable->FindRow<FItemData>(ID, "", true);
+		if (Item)
+		{
+			return Item->ItemName;
+		}
+		else
+		{
+			return NAME_None;
+		}
+	}
 };
 

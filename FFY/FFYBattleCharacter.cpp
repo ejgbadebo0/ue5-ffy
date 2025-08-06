@@ -4,6 +4,7 @@
 #include "FFYBattleCharacter.h"
 
 #include "FFYGameInstance.h"
+#include "FFY/Components/FFYGambitComponent.h"
 #include "FindInBlueprints.h"
 #include "Components/WidgetComponent.h"
 #include "NiagaraComponent.h"
@@ -73,6 +74,8 @@ void AFFYBattleCharacter::InitActorVariables()
 		ShieldMesh->SetupAttachment(this->GetMesh());
 	}
 
+	GambitComponent = CreateDefaultSubobject<UFFYGambitComponent>(TEXT("GambitComponent"));
+
 	SelectionWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("SelectionWidget"));
 	SelectionWidgetComponent->SetupAttachment(this->GetMesh());
 
@@ -130,6 +133,7 @@ void AFFYBattleCharacter::BeginPlay()
 		InitDefaultAbilities();
 	}
 
+
 	//WIDGET COMPONENTS:
 	SelectionWidget = Cast<UFFYBattleCharacterOptionWidget>(SelectionWidgetComponent->GetWidget());
 	if (SelectionWidget)
@@ -171,6 +175,11 @@ void AFFYBattleCharacter::InitializeFromEnemyDataTable()
 		{
 			BattleCharacterStats = *Data;
 		}
+
+		if (GambitComponent)
+		{
+			GambitComponent->SetGambitsActive(true);
+		}
 	}
 }
 
@@ -185,6 +194,7 @@ void AFFYBattleCharacter::ItemUseEvent(FName ID, AFFYBattleCharacter* User, AFFY
 
 void AFFYBattleCharacter::InitDefaultAbilities()
 {
+	ActionContainer = NewObject<UFFYActionContainer>(this, UFFYActionContainer::StaticClass());
 	for (auto a : DefaultAbilityClasses)
 	{
 		if (a)
@@ -192,7 +202,7 @@ void AFFYBattleCharacter::InitDefaultAbilities()
 			AFFYAction* NewAction = GetWorld()->SpawnActor<AFFYAction>(a);
 			if (NewAction)
 			{
-				Actions.Emplace(NewAction);
+				ActionContainer->AddAction(NewAction);
 			}
 		}
 	}
@@ -407,6 +417,8 @@ FDamageEventResult AFFYBattleCharacter::InflictDamage(const FDamageAttributes& S
 					if (InflictChance > ResistChance)
 					{
 						BattleCharacterStats.StatusEffects.Add(s);
+
+						StatusInflictedEvent(s);
 					}
 					
 					//add result to final text result
@@ -593,6 +605,7 @@ bool AFFYBattleCharacter::ReceiveHealing_Implementation(AFFYBattleCharacter* Sou
 			if (BattleCharacterStats.StatusEffects.Contains(s))
 			{
 				BattleCharacterStats.StatusEffects.Remove(s);
+				StatusRemovedEvent(s);
 				RemoveResult = true;
 			}
 		}
@@ -649,6 +662,16 @@ bool AFFYBattleCharacter::ReceiveHealing_Implementation(AFFYBattleCharacter* Sou
 		DamageTakenEvent(DamageEventResult);
 		return true;
 		
+	}
+}
+
+void AFFYBattleCharacter::ActionUsed_Implementation(FName ActionName, bool bIsEnemy)
+{
+	IFFYBattleEvents* Pawn = Cast<IFFYBattleEvents>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
+			
+	if (Pawn != nullptr)
+	{
+		Pawn->ActionUsed_Implementation(ActionName, bIsEnemy);
 	}
 }
 

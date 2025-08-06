@@ -24,6 +24,9 @@ AFFYItemAction::AFFYItemAction()
 
 void AFFYItemAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattleCharacter*> Targets)
 {
+	//Need to use owner to access GameInstance
+	MenuLabel = ActionOwner->GetItemName_Implementation(UseItemID);
+	
 	Super::ExecuteAction(ActionOwner, Targets);
 }
 

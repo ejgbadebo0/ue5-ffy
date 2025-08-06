@@ -11,6 +11,7 @@ class AFFYBattleEffect;
 class UNiagaraSystem;
 class AFFYBattleCharacter;
 class AFFYAction;
+
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
 class UFFYBattleEvents : public UInterface
@@ -40,6 +41,9 @@ public:
 	FDamageAttributes GetDamageAttributes();
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	bool GetIsDead(); 
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void OnStartDefendAction(float ATBValue);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
@@ -65,4 +69,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void DisableContextCommand();
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void ActionUsed(FName ActionName, bool bIsEnemy);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	FName GetItemName(FName ID);
 };

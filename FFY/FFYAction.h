@@ -43,6 +43,10 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	FName Label = "None";
 
+	//for use in specific menus
+	UPROPERTY(EditDefaultsOnly)
+	FName MenuLabel = "None";
+
 	UPROPERTY(EditDefaultsOnly)
 	FText Description = FText::GetEmpty();
 

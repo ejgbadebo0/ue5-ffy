@@ -9,6 +9,7 @@
 #include "FFYGameInstance.h"
 #include "Components/WrapBox.h"
 #include "Widgets/FFYBattleWidget.h"
+#include "Widgets/FFYActionWidget.h"
 
 // Sets default values
 AFFYPlayerBattleManager::AFFYPlayerBattleManager()
@@ -30,6 +31,7 @@ void AFFYPlayerBattleManager::BeginPlay()
 	UFFYGameInstance* GameInstance = Cast<UFFYGameInstance>(GetGameInstance());
 	AFFYBattleSpawnContainer* SpawnContainer = Cast<AFFYBattleSpawnContainer>(UGameplayStatics::GetActorOfClass(GetWorld(), AFFYBattleSpawnContainer::StaticClass()));
 	BattleWidget = CreateWidget<UFFYBattleWidget>(GetWorld(), MasterWidgetClass);
+	ActionWidget = CreateWidget<UFFYActionWidget>(GetWorld(), ActionWidgetClass);
 
 	if (GameInstance && SpawnContainer)
 	{
@@ -49,6 +51,10 @@ void AFFYPlayerBattleManager::BeginPlay()
 	GameMode->OnEnemiesLoaded.AddUniqueDynamic(this, &AFFYPlayerBattleManager::UpdateEnemies);
 	GameMode->OnBattleStarted.AddUniqueDynamic(this, &AFFYPlayerBattleManager::OnStartBattle);
 
+	if (ActionWidget)
+	{
+		ActionWidget->AddToViewport();
+	}
 	
 	if (BattleWidget)
 	{
@@ -276,5 +282,10 @@ void AFFYPlayerBattleManager::UpdateEnemies(TArray<AFFYBattleCharacter*> LoadedE
 				BattleWidget->AddHUDSlot(Enemies[i]);
 			}
 		}
+}
+
+void AFFYPlayerBattleManager::ActionUsed_Implementation(FName ActionName, bool bIsEnemy)
+{
+	ActionWidget->OnActionUsed(ActionName, bIsEnemy);
 }
 

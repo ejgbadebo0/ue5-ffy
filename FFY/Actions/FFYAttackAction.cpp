@@ -4,6 +4,7 @@
 #include "FFYAttackAction.h"
 //ext includes
 #include "FFY/FFYBattleCharacter.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 
 AFFYAttackAction::AFFYAttackAction()
@@ -30,6 +31,11 @@ float AFFYAttackAction::GetCalculatedActionValue(AFFYBattleCharacter* ActionOwne
 
 void AFFYAttackAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattleCharacter*> Targets)
 {
+	if (ActionOwner->ActorHasTag(FName("Enemy")))
+	{
+		ATBCost = 99.f;
+	}
+	
 	EAttackType InAttackType = (ActionOwner->BattleCharacterStats.Equipment.Weapon.bIsEquipable) ? ActionOwner->BattleCharacterStats.Equipment.Weapon.EquipmentData.AttackType : EAttackType::MELEE;
 	EDamageModifier InDamageModifier = (ActionOwner->BattleCharacterStats.Equipment.Weapon.bIsEquipable) ? ActionOwner->BattleCharacterStats.Equipment.Weapon.EquipmentData.DamageModifier : EDamageModifier::PHYSICAL;
 	
@@ -104,6 +110,5 @@ void AFFYAttackAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharac
 		InAttackType);
 
 	//Deal Damage
-	Target->ReceiveDamage_Implementation(ActionOwner, this);
-	
+	ActionOwner->DamageDealtEvent(Target->ReceiveDamage_Implementation(ActionOwner, this));
 }

@@ -17,6 +17,7 @@
 #include "FFYBattleCharacter.generated.h"
 
 class UNiagaraComponent;
+class UFFYGambitComponent;
 class UFFYBattleCharacterOptionWidget;
 class UWidgetComponent;
 class UFFYActionContainer;
@@ -98,6 +99,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats", meta = (AllowPrivateAccess = "true"))
 	FBattleCharacterData BattleCharacterStats;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
+	UFFYGambitComponent* GambitComponent;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Animation", meta = (AllowPrivateAccess = "true"))
 	UMotionWarpingComponent* MotionWarpingComponent;
@@ -168,6 +172,8 @@ public:
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Battle")
 	FDamageAttributes DamageAttributes;
 
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Battle")
+	float DefaultTimeDilation = 1.f;
 
 protected:
 	// Called when the game starts or when spawned
@@ -275,18 +281,35 @@ public:
 	}
 	// --- Battle:
 
+	// BP EVENTS: 
 	UFUNCTION(BlueprintImplementableEvent)
 	void DamageTakenEvent(FDamageEventResult DamageEventResult);
+	
+	UFUNCTION(BlueprintImplementableEvent)
+	void DamageDealtEvent(bool bIsSuccess);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void StatusInflictedEvent(EStatusEffect StatusEffect);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void StatusRemovedEvent(EStatusEffect StatusEffect);
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnPerfectEvade();
 
+	//==========================
+	
 	FDamageEventResult InflictDamage(const FDamageAttributes& SourceDamage, int SourceLevel);
 
 	virtual bool ReceiveDamage_Implementation(AFFYBattleCharacter* Source, AFFYAction* SourceAction) override;
 
 	virtual bool ReceiveHealing_Implementation(AFFYBattleCharacter* Source, AFFYAction* SourceAction) override;
-	
+
+	virtual bool GetIsDead_Implementation() override
+	{
+		return BattleCharacterStats.StatusEffects.Contains(EStatusEffect::KO);
+	}
+
 	virtual FDamageAttributes GetDamageAttributes_Implementation() override
 	{
 		return DamageAttributes;
@@ -350,4 +373,59 @@ public:
 			}
 		}
 	}
+
+	void ExecuteGambitCommand(FName ActionName, const TArray<AFFYBattleCharacter*> ActionTargets)
+	{
+		if (ActionContainer)
+		{
+			bool FoundAction = false;
+			//Is it a Main command
+			for (auto a : ActionContainer->MainCommands)
+			{
+				if (a)
+				{
+					if (a->Label == ActionName)
+					{
+						a->ExecuteAction(this, ActionTargets);
+						FoundAction = true;
+						break;
+					}
+				}
+			}
+
+			if (FoundAction)
+			{
+				return;
+			}
+			//Is it a Magic command
+			for (auto a : ActionContainer->Magic)
+			{
+				if (a)
+				{
+					if (a->Label == ActionName)
+					{
+						a->ExecuteAction(this, ActionTargets);
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	virtual void ActionUsed_Implementation(FName ActionName, bool bIsEnemy) override;
+
+
+	virtual FName GetItemName_Implementation(FName ID) override
+	{
+		IFFYBattleEvents* GameInstance = Cast<IFFYBattleEvents>(GetWorld()->GetGameInstance());
+		if (GameInstance)
+		{
+			return GameInstance->GetItemName_Implementation(ID);
+		}
+		else
+		{
+			return NAME_None;
+		}
+	}
+	
 };

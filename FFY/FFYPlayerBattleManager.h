@@ -15,6 +15,7 @@
 #include "FFYPlayerBattleManager.generated.h"
 
 
+class UFFYActionWidget;
 class UFFYBattleWidget;
 class UFFYMenuWidget;
 class UFFYMasterWidget;
@@ -33,9 +34,15 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UI, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UFFYMasterWidget> MasterWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UI, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UFFYActionWidget> ActionWidgetClass;
 		
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = UI, meta = (AllowPrivateAccess = "true"))
 	UFFYBattleWidget* BattleWidget;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = UI, meta = (AllowPrivateAccess = "true"))
+	UFFYActionWidget* ActionWidget;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
 	UFFYMenuWidget* ActiveMenuContext;
@@ -155,4 +162,10 @@ public:
 		//Enable Battle actions
 		bHasBattleStarted = true;
 	}
+
+	//INTERFACE:
+
+	virtual void ActionUsed_Implementation(FName ActionName, bool bIsEnemy) override;
+	
+	//===========
 };

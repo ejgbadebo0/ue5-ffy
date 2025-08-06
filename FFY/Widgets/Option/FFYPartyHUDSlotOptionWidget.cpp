@@ -71,6 +71,23 @@ void UFFYPartyHUDSlotOptionWidget::BattleStatsChanged(FBattleCharacterData& NewD
 {
 	HPValue->SetText(FText::AsNumber(NewData.HP));
 	MaxHPValue->SetText(FText::AsNumber(NewData.MaxHP));
+\
+	if ((NewData.HP/NewData.MaxHP) < 0.25f)
+	{
+		FText HPText = FText::AsNumber(NewData.HP);
+		FText Status = (NewData.HP <= 0.f) ? FText::FromString("<KO>") : FText::FromString("<Weak>");
+		FTextFormat FMT = FTextFormat::FromString("{SFMT}{Value}</>");
+		FFormatNamedArguments Args;
+		Args.Add("SFMT", Status);
+		Args.Add("Value", HPText);
+		HPText = FText::Format(FMT, Args);
+		HPValue->SetText(HPText);
+	}
+
+	/*
+	HPValue->SetDefaultColorAndOpacity(FSlateColor(FLinearColor(0.85, 0.75, 0, 1)));
+	*/
+	
 	MPValue->SetText(FText::AsNumber(NewData.MP));
 	MaxMPValue->SetText(FText::AsNumber(NewData.MaxMP));
 	
