@@ -141,6 +141,11 @@ void AFFYSceneCamera::UpdatePlayer(AFFYCharacter* Player)
 	}
 }
 
+void AFFYSceneCamera::UpdateInitialTarget_Implementation(AFFYCharacter* Player)
+{
+	UpdatePlayer(Player);
+}
+
 //NOT IN USE:
 //-------------------
 void AFFYSceneCamera::ResetDefaultRotation()

@@ -21,10 +21,25 @@ float AFFYAction::GetVariableATBCost(AFFYBattleCharacter* ActionOwner)
 	return  FMath::Max(1, ActionOwner->ATB);
 }
 
+FName AFFYAction::GetMenuLabel()
+{
+	return (MenuLabel != NAME_None) ? MenuLabel : Label;
+}
+
 void AFFYAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattleCharacter*> Targets)
 {
-	if (CanUse(ActionOwner, Targets.Num()))
+	if (CanUse(ActionOwner, Targets.Num())) //has the resources and not inhibited by status
 	{
+		
+		if (!CanExecute(ActionOwner) || (ActionOwner->ActionState == EActionState::ACTING) || (ActionOwner->ActiveState == EActiveState::WAIT)) //if not currently in a state where character can expend ATB
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, TEXT("QUEUE ACTION ATTEMPT"));
+			if (bQueuedAction) //if this is an action we can queue 
+			{
+				ActionOwner->QueueAction(this, Targets);
+			}
+			return;
+		}
 		Consume(ActionOwner, Targets.Num());
 
 		//Set variables for delayed effects separate from animation
@@ -42,7 +57,7 @@ void AFFYAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFFYBatt
 		}
 		//===========
 		//reset to Idle in case of Defending
-		if (ActionOwner)  
+		if (ActionOwner->ActionState == EActionState::DEFENDING && ActionType != EActionType::STATE)  
 		{
 			//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Silver, "ACTION OWNER VALID");
 			ActionOwner->ActionState = EActionState::IDLE;
@@ -55,7 +70,7 @@ void AFFYAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFFYBatt
 			//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Silver, "ANIM INSTANCE VALID: Play Montage");
 			AnimInstance->PlayActionMontage_Implementation(Label, (Targets.Num() > 1));
 
-			ActionOwner->ActionUsed_Implementation((MenuLabel != NAME_None) ? MenuLabel : Label, ActionOwner->ActorHasTag(FName("Enemy")));
+			ActionOwner->ActionUsed_Implementation(GetMenuLabel(), ActionOwner->ActorHasTag(FName("Enemy")));
 		}
 	}
 	else
@@ -101,12 +116,33 @@ bool AFFYAction::CanUse(AFFYBattleCharacter* ActionOwner, int8 Targets)
 	}
 	else
 	{
-		bool ATBEval = (ATBCost <= 0) ? (ActionOwner->ATB >= GetVariableATBCost(ActionOwner)) : (ActionOwner->ATB >= ATBCost);
+		//is in a condition to use
+		for (auto e : ActionOwner->BattleCharacterStats.StatusEffects)
+		{
+			FAffectedActionTypes* Result = ActionOwner->ActionDisablingEffects.Find(e);
+			if (Result != nullptr)
+			{
+				if (Result->ActionTypes.Contains(ActionType))
+				{
+					return false;
+				}
+			}
+		}
+		
+		//has the resources to use, and not queueing another attack
+		bool StateEval = ActionOwner->ActionState != EActionState::CASTING;
 		bool HPEval = (TargetType == ETargetType::BOTH) ? (ActionOwner->BattleCharacterStats.HP >= HPCost * Targets) : (ActionOwner->BattleCharacterStats.HP >= HPCost);
 		bool MPEval = (TargetType == ETargetType::BOTH) ? (ActionOwner->BattleCharacterStats.MP >= MPCost * Targets) : (ActionOwner->BattleCharacterStats.MP >= MPCost);
 
-		return (ATBEval) && (MPEval) && (HPEval);
+		return (StateEval) && (MPEval) && (HPEval);
 	}
+}
+
+bool AFFYAction::CanExecute(AFFYBattleCharacter* ActionOwner)
+{
+	bool ATBEval = (ATBCost <= 0) ? (ActionOwner->ATB >= GetVariableATBCost(ActionOwner)) : (ActionOwner->ATB >= ATBCost);
+		
+	return (ATBEval); 
 }
 
 void AFFYAction::Consume(AFFYBattleCharacter* ActionOwner, int8 Targets)

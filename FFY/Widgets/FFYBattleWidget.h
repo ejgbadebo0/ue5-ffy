@@ -8,6 +8,7 @@
 #include "FFY/Widgets/FFYMasterWidget.h"
 #include "FFYBattleWidget.generated.h"
 
+class UFFYActionQueueMenuWidget;
 class UFFYContextCommandMenuWidget;
 class UImage;
 class UFFYPartyHUDSlotOptionWidget;
@@ -28,6 +29,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UI, meta = (BindWidget));
 	UFFYContextCommandMenuWidget* ContextCommandMenu;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UI, meta = (BindWidget));
+	UFFYActionQueueMenuWidget* ActionQueueMenu;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "References")
 	AFFYBattleCharacter* BattleContext;
@@ -57,6 +61,12 @@ public:
 
 	
 	virtual void LoadBattleContext_Implementation(AFFYBattleCharacter* Character) override;
+
+	UFUNCTION(BlueprintCallable, Category = "Widgets")
+	void RefreshBattleContext()
+	{
+		LoadBattleContext_Implementation(BattleContext);
+	};
 	
 	UFUNCTION(BlueprintCallable, Category = "References")
 	virtual AFFYBattleCharacter* GetBattleContext_Implementation() override { return BattleContext; };
@@ -84,6 +94,16 @@ public:
 	
 	virtual void SelectAllInputEvent_Implementation() override;
 	virtual UFFYSelectPartyMemberWidget* GetMasterSelectionWidget_Implementation() override;
+
+
+	//BP EVENTS:
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void BattleEnd();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void ActiveModeSwitched(EActiveState ActiveState);
+	//======
 
 protected:
 	virtual void NativeConstruct() override;

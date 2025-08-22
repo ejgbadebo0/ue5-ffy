@@ -84,6 +84,8 @@ class AFFYCharacter : public ACharacter, public IFFYCameraControls, public IFFYI
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* PauseAction;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	FVector2D LastInputVector = FVector2D::ZeroVector;
 
 public:
 	AFFYCharacter();
@@ -159,7 +161,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	FTimerHandle PMDTimerHandle;
 
-	void StartPMDTimer();
+	void StopPMDTimer();
 
 	void SetHasEncounters(bool Value);
 

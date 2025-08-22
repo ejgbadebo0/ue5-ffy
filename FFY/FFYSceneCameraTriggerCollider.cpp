@@ -23,6 +23,18 @@ void AFFYSceneCameraTriggerCollider::BeginPlay()
 	Super::BeginPlay();
 	TempEffectsCollsion->OnComponentBeginOverlap.AddDynamic(this, &AFFYSceneCameraTriggerCollider::OnOverlapBegin);
 	TempEffectsCollsion->OnComponentEndOverlap.AddDynamic(this, &AFFYSceneCameraTriggerCollider::OnOverlapEnd);
+
+	//check if loading from another map if player is already in rotation area.
+	ACharacter* Character = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
+	if (Character && TempEffectsCollsion->IsOverlappingActor(Character))
+	{
+		if (SceneCamera)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("COLLIDER: Begin")));
+			SceneCamera->bIsRotating = true;
+			//if (!SceneCamera->bIsRotating) { SceneCamera->ResetDefaultRotation(); }
+		}
+	}
 	
 }
 

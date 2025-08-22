@@ -148,6 +148,7 @@ void UFFYMenuWidget::EndSelection_Implementation()
 		UFFYSelectPartyMemberWidget* SelectionWidget = GetSelectionWidget_Implementation();
 		if (SelectionWidget && SelectionWidget->IsVisible())
 		{
+			SelectionWidget->SetGuidedSelect(false);
 			SelectionWidget->ResetOptions_Implementation(); 
 			SelectionWidget->OnPartyMemberSelected.RemoveDynamic(this, &UFFYMenuWidget::ExecuteContextAction);
 			SelectionWidget->SetDefaultTargetGroup_Implementation(false, true);
@@ -169,6 +170,13 @@ void UFFYMenuWidget::StartSelection_Implementation(UFFYOptionWidget* SelectedOpt
 	UFFYSelectPartyMemberWidget* SelectionWidget = GetSelectionWidget_Implementation();
 	if (SelectionWidget)
 	{
+		//make sure options are available
+		if (!(SelectionWidget->GetOptions().Num() > 0))
+		{
+			CurrentOption->Flicker_Implementation(false);
+			SetMenuMode(EMenuMode::NONE);
+			return;
+		} 
 		//FText SEText;
 		//UEnum::GetDisplayValueAsText(GetVisibility(), SEText);
 		//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Black, FString::Printf(TEXT("VISIBILTY: %s"), *SEText.ToString()));
@@ -183,6 +191,7 @@ void UFFYMenuWidget::StartSelection_Implementation(UFFYOptionWidget* SelectedOpt
 				SelectionWidget->SetSelectAll(false);
 				SelectionWidget->bCanSelectAll = false;
 				SelectionWidget->GetOptions()[0]->OnSelected();
+				SelectionWidget->SetGuidedSelect(true);
 				break;
 			case ETargetType::MULTI: //temp allow to lock selection in multi-target mode
 				SelectionWidget->bCanSelectAll = true;
@@ -192,6 +201,7 @@ void UFFYMenuWidget::StartSelection_Implementation(UFFYOptionWidget* SelectedOpt
 			case ETargetType::BOTH:
 				SelectionWidget->bCanSelectAll = true;
 				SelectionWidget->GetOptions()[0]->OnSelected();
+				SelectionWidget->SetGuidedSelect(true);
 				break;
 		}
 	}

@@ -21,7 +21,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category="AFFY")
 	void InitSceneCameras();
 
+	UFUNCTION()
+	void InitPlayerTransform(bool Load, FTransform& InTransform);
+
 protected:
+	
 	virtual void BeginPlay() override;
 
 public:

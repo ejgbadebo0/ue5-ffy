@@ -21,7 +21,7 @@ void UFFYPartyHUDSlotOptionWidget::NativeConstruct()
 	Super::NativeConstruct();
 }
 
-void UFFYPartyHUDSlotOptionWidget::OnActionSelected(AFFYAction* Action, bool bIsContext)
+void UFFYPartyHUDSlotOptionWidget::OnActionSelected(AFFYAction* Action, bool bIsContext, float Duration)
 {
 	if (bIsContext)
 	{

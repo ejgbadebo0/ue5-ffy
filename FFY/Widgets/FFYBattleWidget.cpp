@@ -5,6 +5,7 @@
 
 #include "Components/WrapBox.h"
 #include "FFY/FFYActionContainer.h"
+#include "Menu/FFYActionQueueMenuWidget.h"
 #include "Menu/FFYContextCommandMenuWidget.h"
 #include "Menu/FFYSelectBattleCharacterWidget.h"
 #include "Option/FFYPartyHUDSlotOptionWidget.h"
@@ -15,6 +16,10 @@ void UFFYBattleWidget::AddHUDSlot(AFFYBattleCharacter* Character)
 	if (Character && Widget)
 	{
 		Widget->AddHUDSlot(Character);
+		if (!Widget->OnOptionsUpdated.IsBound())
+		{
+			Widget->OnOptionsUpdated.AddUniqueDynamic(this, &UFFYBattleWidget::RefreshBattleContext); 
+		}
 	}
 	
 }
@@ -24,6 +29,11 @@ void UFFYBattleWidget::InitializeContextMenu(TArray<AFFYBattleCharacter*> Party)
 	if (ContextCommandMenu)
 	{
 		ContextCommandMenu->InitializeParty(Party);
+	}
+
+	if (ActionQueueMenu)
+	{
+		ActionQueueMenu->InitializeParty(Party);
 	}
 }
 

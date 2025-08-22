@@ -33,4 +33,7 @@ public:
 	
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	class AFFYSceneCamera* GetSceneCameraActor();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void UpdateInitialTarget(AFFYCharacter* Player);
 };

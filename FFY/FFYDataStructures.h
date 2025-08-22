@@ -157,3 +157,115 @@ struct FFY_API FBattleCharacterData : public FTableRowBase
 
 	//abilities can be assigned through a higher level struct (maybe defined in GameInstance)
 };
+
+
+USTRUCT(BlueprintType)
+struct FFY_API FBattleEXPData
+{
+
+	GENERATED_BODY()
+
+	//used for display in menus
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FName CharacterName = NAME_None;
+
+	//total exp rewarded from battle
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float TotalEXPGain = 0.f;
+	
+	//levels gained on character after applying total exp
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int LevelsGained = 0;
+
+	//character lv before reward
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int InitialLV = 0;
+
+	//exp value of character before reward
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float InitialEXPValue = 0.f;
+
+	//req exp value of character before reward
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float InitialReqEXPValue = 0.f;
+
+	//final EXP value to set on character
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float EXPValueResult = 0.f;
+
+	//final ReqEXP value to set on character
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float ReqEXPValueResult = 0.f;
+};
+
+USTRUCT(BlueprintType)
+struct FFY_API FCameraActionData
+{
+	GENERATED_BODY()
+
+	//Total duration allowed for camera cut
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Duration = 0.f;
+
+	//duration that timeline has to lerp to target
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float TimelineDuration = 1.f;
+	
+	//how fast camera will lerp transforms
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float LerpSpeed = 1.f;
+
+	//if none, will use world origin for relative location and custom rotation variables
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	ECameraTargetType StartCameraTargetType = ECameraTargetType::NONE;
+
+	//if none, will use world origin for relative location and custom rotation variables
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	ECameraTargetType EndCameraTargetType = ECameraTargetType::NONE;
+
+	//if focusing on specific bone socket on target
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName SocketName = NAME_None;
+
+	//relative to target denoted by StartCameraTargetType, if 0 will use current camera transform
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector RelativeStartLocation = FVector::ZeroVector;
+
+	//relative to target denoted by EndCameraTargetType, if 0 will use current camera transform
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector RelativeEndLocation = FVector::ZeroVector;
+
+	//used when CameraTargetType is none
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FRotator CustomStartRotation = FRotator::ZeroRotator;
+
+	//used when CameraTargetType is none
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FRotator CustomEndRotation = FRotator::ZeroRotator;
+
+	//if 0, will not affect camera zoom
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float StartZoomOffset = 0.f;
+
+	//if 0, will not affect camera zoom
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float EndZoomOffset = 0.f;
+};
+
+USTRUCT(BlueprintType)
+struct FFY_API FCameraActionContainer
+{
+	GENERATED_BODY()
+
+	//current CameraActions will be overriden by others with higher values
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 Priority = 0;
+
+	// 0-1: if random float exceeds value, this CameraAction won't be played
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Probability = 1.f;
+
+	//set of data structs for a complete CameraAction
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FCameraActionData> CameraActions;
+};

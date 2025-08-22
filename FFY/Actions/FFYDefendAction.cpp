@@ -13,7 +13,7 @@ AFFYDefendAction::AFFYDefendAction()
 	TargetType = ETargetType::NONE;
 	ActionType = EActionType::STATE;
 	bIsDefaultTargetEnemy = false;
-	bQueuedAction = false;
+	bQueuedAction = true;
 	bIsPassive = false;
 	ATBCost = -1;
 	HPCost = 0;

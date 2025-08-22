@@ -13,6 +13,7 @@ class UFFYPartyHUDSlotOptionWidget;
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnOptionGroupDisabled, bool, bIsEnemy);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnOptionsUpdated);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnResetAll);
 /**
  * 
@@ -28,6 +29,7 @@ public:
 
 	//DELEGATES:
 	FOnOptionGroupDisabled OnOptionGroupDisabled;
+	FOnOptionsUpdated OnOptionsUpdated;
 	FOnResetAll OnResetAll;
 	//------
 
@@ -55,6 +57,11 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Widget")
 	void AddHUDSlot(AFFYBattleCharacter* Character);
+
+	//CALLBACK:
+
+	UFUNCTION(BlueprintCallable, Category = "Widget")
+	void RemoveHUDSlot(AFFYBattleCharacter* Character);
 
 	//INTERFACE:
 	virtual void SetDefaultTargetGroup_Implementation(bool bIsEnemy, bool Reset) override;

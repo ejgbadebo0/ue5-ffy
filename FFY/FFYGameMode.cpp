@@ -34,6 +34,12 @@ void AFFYGameMode::InitSceneCameras()
 			{
 				//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Black, TEXT("Call ViewTarget Func"));
 				CharacterReference->SetActiveViewTarget(OutActors[SceneIndex]);
+				IFFYCameraControls* ViewTarget = Cast<IFFYCameraControls>(OutActors[SceneIndex]);
+				
+				if (OutActors[SceneIndex]->IsActorTickEnabled() && ViewTarget != nullptr)
+				{
+					ViewTarget->UpdateInitialTarget_Implementation(CharacterReference);
+				}
 			}
 		}
 		else
@@ -59,6 +65,14 @@ void AFFYGameMode::InitSceneCameras()
 	}
 }
 
+void AFFYGameMode::InitPlayerTransform(bool Load, FTransform& InTransform)
+{
+	if (CharacterReference != nullptr && Load)
+	{
+		CharacterReference->SetActorTransform(InTransform);
+	}
+}
+
 void AFFYGameMode::BeginPlay()
 {
 	Super::BeginPlay();
@@ -69,6 +83,7 @@ void AFFYGameMode::BeginPlay()
 	{
 		CharacterReference = PlayerActor;
 		InitSceneCameras();
+		InitPlayerTransform(GameInstance->PlayerPreBattleInfo.LoadTransform, GameInstance->PlayerPreBattleInfo.LastPlayerTransform);
 	}
 	
 }

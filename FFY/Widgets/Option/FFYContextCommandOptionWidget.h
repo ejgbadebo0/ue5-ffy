@@ -41,10 +41,10 @@ public:
 	FText DefaultInputText;
 
 	UFUNCTION(BlueprintCallable)
-	void Reload(AFFYBattleCharacter* Character);
+	virtual void Reload(AFFYBattleCharacter* Character);
 
 	UFUNCTION(BlueprintCallable)
-	void Unload();
+	virtual void Unload();
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnReload();

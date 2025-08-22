@@ -29,9 +29,6 @@ public:
 	AFFYAction* LastAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	AFFYAction* QueuedAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	AFFYAction* ContextCommand;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Actions)

@@ -16,6 +16,7 @@
 #include "FFYInteractableActor.h"
 #include "FFYWidgetControlPawn.h"
 #include "InputActionValue.h"
+#include "Chaos/Utilities.h"
 #include "Components/WidgetComponent.h"
 #include "Widgets/FFYMessageWidget.h"
 
@@ -206,7 +207,19 @@ void AFFYCharacter::Move(const FInputActionValue& Value)
 		} 
 		
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
+
+		// get difference between input vectors this and last frame of movement
+		FVector2D CompareVector = LastInputVector.GetRotated(Rotation.Yaw).GetSafeNormal();
+		FVector2D PendingVector = MovementVector.GetRotated(Rotation.Yaw).GetSafeNormal();
 		
+		float InputDot = FVector2D::DotProduct(CompareVector, PendingVector);
+		//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString::Printf(TEXT("DOT: %f"), InputDot) );
+		if (InputDot < 0.75f) //stop preserving direction if enough of a change
+		{
+			StopPMDTimer();
+		}
+		LastInputVector = MovementVector;
+
 		// get forward vector
 		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 	
@@ -337,7 +350,7 @@ void AFFYCharacter::OnStopMove()
 	bPerserveMovementDirection = false;
 }
 
-void AFFYCharacter::StartPMDTimer()
+void AFFYCharacter::StopPMDTimer()
 {
 	OnStopMove();
 	GetWorld()->GetTimerManager().ClearTimer(PMDTimerHandle);
@@ -381,7 +394,7 @@ void AFFYCharacter::SetActiveViewTarget(AActor* Camera)
 		MainPlayerController->SetViewTarget(this, FViewTargetTransitionParams());
 	}
 
-	GetWorld()->GetTimerManager().SetTimer(PMDTimerHandle, this, &AFFYCharacter::StartPMDTimer, 1.f);
+	GetWorld()->GetTimerManager().SetTimer(PMDTimerHandle, this, &AFFYCharacter::StopPMDTimer, 1.f);
 }
 
 void AFFYCharacter::UpdateInteractActor_Implementation(AFFYInteractableActor* InteractActor)

@@ -47,6 +47,9 @@ public:
 
 	UFUNCTION()
 	virtual void OnReset();
+
+	UFUNCTION()
+	virtual void OnDestroy();
 	//-----------
 	
 	UFUNCTION(BlueprintCallable)

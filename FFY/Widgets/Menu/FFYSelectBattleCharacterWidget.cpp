@@ -34,6 +34,7 @@ void UFFYSelectBattleCharacterWidget::AddHUDSlot(AFFYBattleCharacter* Character)
 				if (EnemyList)
 				{
 					EnemyList->AddChildToWrapBox(ToAdd);
+					Character->OnCharacterDefeated.AddUniqueDynamic(this, &UFFYSelectBattleCharacterWidget::RemoveHUDSlot); //bind for removal
 				}
 			}
 			return;
@@ -63,12 +64,43 @@ void UFFYSelectBattleCharacterWidget::AddHUDSlot(AFFYBattleCharacter* Character)
 	}
 }
 
+void UFFYSelectBattleCharacterWidget::RemoveHUDSlot(AFFYBattleCharacter* Character)
+{
+	if (Character)
+	{
+		for (auto o : EnemyOptions)
+		{
+			UFFYPartyHUDSlotOptionWidget* EnemySlot = Cast<UFFYPartyHUDSlotOptionWidget>(o);
+			if (o)
+			{
+				if (Character == EnemySlot->GetBattleCharacterReference())
+				{
+					if (EnemyList)
+					{
+						EnemySlot->OnPartyHUDSlotDestroyed.Broadcast();
+						EnemyList->RemoveChild(o);
+					}
+					EnemyOptions.Remove(o);
+					OnOptionsUpdated.Broadcast();
+					break;
+				}
+			}
+		}
+	}
+}
+
 void UFFYSelectBattleCharacterWidget::SetDefaultTargetGroup_Implementation(bool bIsEnemy, bool Reset)
 {
 	//FString Valstr = (bIsEnemy) ? "true" : "false";
 	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Magenta, FString::Printf(TEXT("%s"), *Valstr));
 
 
+	//make sure there are still elements to select
+	if (!(Options.Num() > 0))
+	{
+		return;
+	}
+	
 	//set for input events
 	bIsTargetingEnemies = bIsEnemy;
 
@@ -115,6 +147,7 @@ void UFFYSelectBattleCharacterWidget::SetDefaultTargetGroup_Implementation(bool 
 		if (Options[0])
 		{
 			Options[0]->OnSelected();
+			SetGuidedSelect(true);
 		}
 		OnOptionGroupDisabled.Broadcast(bIsEnemy);
 	}
@@ -160,6 +193,7 @@ void UFFYSelectBattleCharacterWidget::ResetOptions_Implementation()
 		SetSelectAll(false);
 	}
 	bCanSelectAll = false;
+	SetGuidedSelect(false);
 	Super::ResetOptions_Implementation();
 }
 

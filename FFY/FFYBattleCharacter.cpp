@@ -3,11 +3,13 @@
 
 #include "FFYBattleCharacter.h"
 
+#include "FFYAnimationControls.h"
 #include "FFYGameInstance.h"
 #include "FFY/Components/FFYGambitComponent.h"
 #include "FindInBlueprints.h"
 #include "Components/WidgetComponent.h"
 #include "NiagaraComponent.h"
+#include "Components/FFYStatusEffectComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Notify/FFYElementalNiagaraEffectState.h"
 #include "Widgets/Option/FFYBattleCharacterOptionWidget.h"
@@ -89,6 +91,9 @@ void AFFYBattleCharacter::InitActorVariables()
 
 	NiagaraSystemComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("NiagaraSystemComponent"));
 	NiagaraSystemComponent->SetupAttachment(this->GetMesh());
+
+	StatusEffectComponent = CreateDefaultSubobject<UFFYStatusEffectComponent>(TEXT("StatusEffectComponent"));
+	StatusEffectComponent->SetupAttachment(this->GetMesh());
 }
 
 
@@ -266,7 +271,7 @@ void AFFYBattleCharacter::Consume(float ATBCost, float HPCost, float MPCost)
 
 void AFFYBattleCharacter::UpdateATB(float DeltaTimeX)
 {
-	if (ATB == 100.f)
+	if (ATB == 100.f || ActionState == EActionState::ACTING || ActiveState == EActiveState::WAIT)
 	{
 		return;
 	}
@@ -319,7 +324,7 @@ void AFFYBattleCharacter::UpdateMotionWarpTransform(FName WarpName, FVector Warp
 	}
 }
 
-
+// Executed once a valid hit is evaluated
 FDamageEventResult AFFYBattleCharacter::InflictDamage(const FDamageAttributes& SourceDamage, int SourceLevel)
 {
 	//GEngine->AddOnScreenDebugMessage(-1, 35.f, FColor::Orange, "DAMAGE: =====================" );
@@ -365,9 +370,10 @@ FDamageEventResult AFFYBattleCharacter::InflictDamage(const FDamageAttributes& S
 	//GEngine->AddOnScreenDebugMessage(-1, 35.f, FColor::Red, FString::Printf(TEXT("FinalDamage: %f"), FinalDamage ));
 	//GEngine->AddOnScreenDebugMessage(-1, 35.f, FColor::Orange, "=========================" );
 
-
+    float PreDamageHPRatio = (BattleCharacterStats.HP/BattleCharacterStats.MaxHP);
 	//DEAL FINAL DAMAGE ==========================================
 	BattleCharacterStats.HP = FMath::Max(BattleCharacterStats.HP - FinalDamage, 0.0f);
+	
 	if (BattleCharacterStats.HP <= 0)
 	{
 		BattleCharacterStats.StatusEffects.Emplace(EStatusEffect::KO);
@@ -378,8 +384,29 @@ FDamageEventResult AFFYBattleCharacter::InflictDamage(const FDamageAttributes& S
 		Args.Add("Previous", ResultText);
 		
 		ResultText = FText::Format(FMT, Args);
+		IFFYAnimationControls* Instance = Cast<IFFYAnimationControls>(AnimInstance);
+		if (Instance)
+		{
+			Instance->PlayActionMontage_Implementation(FName("KO"), false);
+		}
+		if (StatusEffectComponent)
+		{
+			StatusEffectComponent->AddEffect(EStatusEffect::KO);
+			StatusEffectComponent->OnKOEffectFinished.AddUniqueDynamic(this, &AFFYBattleCharacter::K2_DestroyActor);
+		}
+		OnCharacterDefeated.Broadcast(this);
+	}
+	else 
+	{
+		//alert that character is low HP for specific abilities
+		if ((BattleCharacterStats.HP/BattleCharacterStats.MaxHP) <= 0.25f && PreDamageHPRatio > 0.25f)
+		{
+			OnCharacterWeakened.Broadcast(this);
+		}
 	}
 	//=============================================================
+
+
 	
 	//If damage source also inflicts a status
 	
@@ -419,6 +446,15 @@ FDamageEventResult AFFYBattleCharacter::InflictDamage(const FDamageAttributes& S
 						BattleCharacterStats.StatusEffects.Add(s);
 
 						StatusInflictedEvent(s);
+						if (StatusEffectComponent)
+						{
+							StatusEffectComponent->AddEffect(s);
+						}
+						//check if it's a condition that prevents further action
+						if (LossConditionEffects.Contains(s))
+						{
+							OnCharacterDefeated.Broadcast(this);
+						}
 					}
 					
 					//add result to final text result
@@ -579,6 +615,12 @@ bool AFFYBattleCharacter::ReceiveHealing_Implementation(AFFYBattleCharacter* Sou
 		{
 			return false;
 		}
+
+		//if Zombie type enemy or affected by Zombie status deal damage to target instead. 
+		if (BattleCharacterStats.StatusEffects.Contains(EStatusEffect::ZOMBIE) || BattleCharacterStats.Weaknesses.Contains(EElement::HEALING))
+		{
+			return ReceiveDamage_Implementation(Source, SourceAction);
+		} 
 		
 		BattleCharacterStats.HP = FMath::Floor(FMath::Min(BattleCharacterStats.HP + SourceDamageAttributes.DamageAmount, BattleCharacterStats.MaxHP));
 
@@ -606,6 +648,10 @@ bool AFFYBattleCharacter::ReceiveHealing_Implementation(AFFYBattleCharacter* Sou
 			{
 				BattleCharacterStats.StatusEffects.Remove(s);
 				StatusRemovedEvent(s);
+				if (StatusEffectComponent)
+				{
+					StatusEffectComponent->RemoveEffect(s);
+				}
 				RemoveResult = true;
 			}
 		}
@@ -663,6 +709,20 @@ bool AFFYBattleCharacter::ReceiveHealing_Implementation(AFFYBattleCharacter* Sou
 		return true;
 		
 	}
+}
+
+void AFFYBattleCharacter::SetVictoryState()
+{
+	bool SetCondition = true;
+	for (auto e : BattleCharacterStats.StatusEffects)
+	{
+		if (EXPGainDisablingEffects.Contains(e))
+		{
+			SetCondition = false;
+		}
+	}
+
+	bVictoryState = SetCondition;
 }
 
 void AFFYBattleCharacter::ActionUsed_Implementation(FName ActionName, bool bIsEnemy)

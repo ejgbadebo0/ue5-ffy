@@ -5,10 +5,14 @@
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
 #include "FFYAnimationControls.h"
+#include "FFYBattleCharacter.h"
+#include "FFYDataEnums.h"
+#include "FFYDataStructures.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "FFYBattleCharacterAnimInstance.generated.h"
 
+enum class EActionState : uint8;
 class AFFYBattleCharacter;
 class UMotionWarpingComponent;
 
@@ -25,6 +29,40 @@ protected:
 	virtual void Initialize(UAnimInstance* InAnimInstance) override;
 
 	virtual void Update(float DeltaSeconds) override;
+	
+	bool CheckWeak()
+	{
+		bool LowHP = (OwningCharacter->BattleCharacterStats.HP/OwningCharacter->BattleCharacterStats.MaxHP) <= 0.25f;
+		bool NegativeStatus = false;
+		
+		for (auto e : OwningCharacter->BattleCharacterStats.StatusEffects)
+		{
+			if (NegativeEffects.Contains(e))
+			{
+				NegativeStatus = true;
+			}
+		}
+		
+		return (LowHP || NegativeStatus);
+	};
+
+	//can't use editor to initialize
+	void InitializeNegativeEffects()
+	{
+		NegativeEffects.Emplace(EStatusEffect::BURN);
+		NegativeEffects.Emplace(EStatusEffect::POISON);
+		NegativeEffects.Emplace(EStatusEffect::SILENCE);
+		NegativeEffects.Emplace(EStatusEffect::BLIND);
+		NegativeEffects.Emplace(EStatusEffect::PARALYSIS);
+		NegativeEffects.Emplace(EStatusEffect::SLEEP);
+		NegativeEffects.Emplace(EStatusEffect::BERSERK);
+		NegativeEffects.Emplace(EStatusEffect::SHOCK);
+		NegativeEffects.Emplace(EStatusEffect::SLEEP);
+		NegativeEffects.Emplace(EStatusEffect::DRENCH);
+		NegativeEffects.Emplace(EStatusEffect::FREEZE);
+		NegativeEffects.Emplace(EStatusEffect::CONFUSE);
+		NegativeEffects.Emplace(EStatusEffect::STAGGER);
+	}
 
 	UPROPERTY(Transient)
 	TObjectPtr<UFFYBattleCharacterAnimInstance> AnimInstance = nullptr;
@@ -35,8 +73,23 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category="References", meta=(AllowPrivateAccess=true))
 	TObjectPtr<UCharacterMovementComponent> CharacterMovementComponent = nullptr;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	TArray<EStatusEffect> NegativeEffects;
+
 	UPROPERTY(Transient, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
 	bool bIsFalling = false;
+
+	UPROPERTY(Transient, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
+	bool bIsDead = false;
+
+	UPROPERTY(Transient, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
+	bool bIsWeak = false;
+	
+	UPROPERTY(Transient, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
+	bool bVictory = false;
+
+	UPROPERTY(Transient, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
+	EActionState CurrentActionState = EActionState::IDLE;
 	
 };
 

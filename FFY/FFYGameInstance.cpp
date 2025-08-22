@@ -87,12 +87,24 @@ void UFFYGameInstance::Init()
 	FItemData* StarterShield = ItemsTableHandle.DataTable->FindRow<FItemData>(FName("11"), "", true);
 	if (StarterWeapon1)
 	{
+		//add default equipment
 		AddToInventory(*StarterWeapon1, 2);
 		AddToInventory(*StarterWeapon2, 1);
 		AddToInventory(*StarterWeapon3, 1);
 		AddToInventory(*StarterShield, 1);
+		
 	}
+	
 	ItemManager = NewObject<UFFYItem>(this, UFFYItem::StaticClass());
+
+	if (ItemManager)
+	{
+		//try to equip starter equipment
+		ItemManager->Equip(Inventory[FindInventoryItemIndex(StarterWeapon1->ID)], GetParty()[0].PartyCharacterData);
+		ItemManager->Equip(Inventory[FindInventoryItemIndex(StarterShield->ID)], GetParty()[0].PartyCharacterData);
+		ItemManager->Equip(Inventory[FindInventoryItemIndex(StarterWeapon2->ID)], GetParty()[2].PartyCharacterData);
+		ItemManager->Equip(Inventory[FindInventoryItemIndex(StarterWeapon3->ID)], GetParty()[1].PartyCharacterData);
+	}
 
 	//bind delegates
 }
@@ -105,6 +117,7 @@ void UFFYGameInstance::Shutdown()
 
 void UFFYGameInstance::EvaluateEncounter(float BattleCounter)
 {
+	//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString::Printf(TEXT("Counter: %d"), BattleCounter));
 	if (BattleCounter >= BattleLevelMapInfo.EncounterFloor)
 	{
 		int32 Value = FMath::RandRange(0, 100);
@@ -113,6 +126,7 @@ void UFFYGameInstance::EvaluateEncounter(float BattleCounter)
 			bIsLoadingMap = true;
 			AFFYCharacter* PlayerCharacter = Cast<AFFYCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 			PlayerPreBattleInfo.LastPlayerTransform = PlayerCharacter->GetTransform();
+			PlayerPreBattleInfo.LoadTransform = true;
 			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, TEXT("ENCOUNTER TRIGGERED!!!"));
 
 			StartEncounter();
@@ -139,10 +153,20 @@ void UFFYGameInstance::StartEncounter()
 			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Blue, TEXT("START ENCOUNTER VALID"));	
 
 			UGameplayStatics::OpenLevel(GetWorld(), BattleLevelMapInfo.BattleMapName, true);
+			bIsLoadingMap = false;
 		}
 	}
 	
 }
+
+void UFFYGameInstance::EndEncounter()
+{
+	StartTransition_Implementation("Pause");
+
+	UGameplayStatics::OpenLevel(GetWorld(), PlayerPreBattleInfo.CurrentLevelName, true);
+	
+}
+
 
 void UFFYGameInstance::ElapsePlayTime()
 {
@@ -284,8 +308,23 @@ void UFFYGameInstance::EndTransition_Implementation(FName Signature)
 	}
 }
 
+void UFFYGameInstance::UpdatePartyMemberStats_Implementation(FBattleCharacterData CharacterData)
+{
+	
+	for (auto &i : Party)
+	{
+		if (i.PartyCharacterData.CharacterName == CharacterData.CharacterName)
+		{
+			//Found party member
+			i.PartyCharacterData = CharacterData;
+			break;
+		}
+	}
+	
+}
+
 void UFFYGameInstance::UseInventoryItem_Implementation(FName ID, AFFYBattleCharacter* Source,
-	AFFYBattleCharacter* Target)
+                                                       AFFYBattleCharacter* Target)
 {
 	int Index = FindInventoryItemIndex(ID);
 	if (Index > -1)

@@ -58,6 +58,7 @@ void UFFYMainPauseMenuWidget::EndSelection_Implementation()
 		UFFYSelectPartyMemberWidget* SelectionWidget = GetSelectionWidget_Implementation();
 		if (SelectionWidget && SelectionWidget->IsVisible())
 		{
+			SelectionWidget->SetGuidedSelect(false);
 			SelectionWidget->OnPartyMemberSelected.RemoveDynamic(this, &UFFYMenuWidget::ExecuteContextAction);
 			SelectionWidget->GetOptions()[0]->OnUnselected();
 		}
@@ -75,6 +76,7 @@ void UFFYMainPauseMenuWidget::StartSelection_Implementation(UFFYOptionWidget* Se
 	{
 		SelectionWidget->OnPartyMemberSelected.AddUniqueDynamic(this, &UFFYMenuWidget::ExecuteContextAction);
 		SelectionWidget->GetOptions()[0]->OnSelected();
+		SelectionWidget->SetGuidedSelect(true);
 	}
 	else
 	{

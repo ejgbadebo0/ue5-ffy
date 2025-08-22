@@ -41,7 +41,13 @@ public:
 	FDamageAttributes GetDamageAttributes();
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	bool GetIsDead(); 
+	bool GetIsDead();
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void SetActiveState(EActiveState NewState);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void SetActionState(EActionState NewState, bool bSetWait);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void OnStartDefendAction(float ATBValue);
@@ -50,10 +56,10 @@ public:
 	void StartBattle();
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	void DestroyNiagaraEffect(UNiagaraSystem* NiagaraComponent);
+	void EndBattle();
 
-	//UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	//void (AFFYAction* Action, AFFYBattleCharacter* User, TArray<AFFYBattleCharacter*> Targets);
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void DestroyNiagaraEffect(UNiagaraSystem* NiagaraComponent);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void BeginSpawnBattleEffect(TSubclassOf<AFFYBattleEffect> BattleEffectClass);
@@ -62,10 +68,13 @@ public:
 	void TriggerBattleEffect();
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void StartCameraAction(FCameraActionContainer CameraActionContainer);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void UseInventoryItem(FName ID, AFFYBattleCharacter* Source, AFFYBattleCharacter* Target);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	void EnableContextCommand(FName ActionName);
+	void EnableContextCommand(FName ActionName, float Duration);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void DisableContextCommand();
@@ -75,4 +84,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	FName GetItemName(FName ID);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void UpdatePartyMemberStats(FBattleCharacterData CharacterData);
+
+	
+
 };

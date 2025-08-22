@@ -66,13 +66,18 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	void ResetDefaultRotation();
+
 	UFUNCTION(BlueprintCallable)
 	FVector GetLerpLocationAtDistanceAlongSpline();
 
 	//need a function to update the player ref
 	void UpdatePlayer(AFFYCharacter* Player);
 
-	void ResetDefaultRotation();
+	//INTERFACE:
+	//version of updateplayer that's done through map initialization
+	virtual void UpdateInitialTarget_Implementation(AFFYCharacter* Player) override;
+	
 	
 	virtual void FrameCapture_Implementation() override;
 };

@@ -119,8 +119,24 @@ enum class EActionState : uint8
 	IDLE UMETA(DisplayName = "Idle"),
 	ACTING UMETA(DisplayName = "Acting "),
 	CASTING UMETA(DisplayName = "Casting"),
-	ATTACKING UMETA(DisplayName = "Attacking"),
 	DEFENDING UMETA(DisplayName = "Defending"),
 	E_MAX UMETA(Hidden)
 };
 
+UENUM(BlueprintType)
+enum class EActiveState : uint8
+{
+	ACTIVE UMETA(DisplayName = "Active"),
+	WAIT UMETA(DisplayName = "Wait"),
+	EMAX UMETA(Hidden)
+};
+
+UENUM(BlueprintType)
+enum class ECameraTargetType : uint8
+{
+	NONE UMETA(DisplayName = "None"),
+	USER UMETA(DisplayName = "User"),
+	TARGET UMETA(DisplayName = "Target"),
+	EFFECT UMETA(DisplayName = "Effect"),
+	E_MAX UMETA(Hidden)
+};

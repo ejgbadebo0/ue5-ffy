@@ -13,7 +13,7 @@ AFFYItemAction::AFFYItemAction()
 	TargetType = ETargetType::SINGLE;
 	ActionType = EActionType::ITEM;
 	bIsDefaultTargetEnemy = false;
-	bQueuedAction = false;
+	bQueuedAction = true;
 	bIsPassive = false;
 	ATBCost = 100;
 	HPCost = 0;

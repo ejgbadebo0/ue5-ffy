@@ -31,10 +31,18 @@ void UFFYBattleCharacterOptionWidget::OnReset()
 	SetIsDisabled(false);
 }
 
+void UFFYBattleCharacterOptionWidget::OnDestroy()
+{
+	SetIsDisabled(true);
+	SetRenderOpacity(0.f);
+	this->RemoveFromParent();
+}
+
 void UFFYBattleCharacterOptionWidget::InitializeFromWidget(UFFYPartyHUDSlotOptionWidget* InWidget)
 {
 	InWidget->OnPartyHUDSlotSelected.AddUniqueDynamic(this, &UFFYBattleCharacterOptionWidget::OnSelectedProxy);
 	InWidget->OnPartyHUDSlotUnselected.AddUniqueDynamic(this, &UFFYBattleCharacterOptionWidget::OnUnselectedProxy);
+	InWidget->OnPartyHUDSlotDestroyed.AddUniqueDynamic(this, &UFFYBattleCharacterOptionWidget::OnDestroy);
 
 	auto InMenu = Cast<UFFYSelectBattleCharacterWidget>(InWidget->GetOwnerMenu());
 	if (InMenu)

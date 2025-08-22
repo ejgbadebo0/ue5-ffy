@@ -17,6 +17,7 @@ class AFFYBattleCharacter;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPartyHUDSlotSelected);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPartyHUDSlotUnselected);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPartyHUDSlotConfirmed);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPartyHUDSlotDestroyed);
 /**
  * 
  */
@@ -42,7 +43,7 @@ protected:
 	bool ATBVariableCost = false;
 
 	UFUNCTION()
-	void OnActionSelected(AFFYAction* Action, bool bIsContext);
+	void OnActionSelected(AFFYAction* Action, bool bIsContext, float Duration);
 
 	UFUNCTION()
 	void UpdateATBProgress(float Value);
@@ -56,6 +57,7 @@ public:
 	FOnPartyHUDSlotSelected OnPartyHUDSlotSelected;
 	FOnPartyHUDSlotUnselected OnPartyHUDSlotUnselected;
 	FOnPartyHUDSlotConfirmed OnPartyHUDSlotConfirmed;
+	FOnPartyHUDSlotDestroyed OnPartyHUDSlotDestroyed;
 	//---
 
 	UFUNCTION()

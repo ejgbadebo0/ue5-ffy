@@ -65,6 +65,9 @@ struct FFY_API FPlayerPreBattleInfo
 	FName CurrentLevelName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool LoadTransform = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FTransform LastPlayerTransform;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -102,6 +105,8 @@ public:
 	void EvaluateEncounter(float BattleCounter);
 
 	void StartEncounter();
+
+	void EndEncounter();
 
 	UFUNCTION(BlueprintCallable)
 	TArray<FPartySlot>& GetParty()
@@ -210,6 +215,8 @@ public:
 	void StartTransition_Implementation(FName Signature) override;
 
 	void EndTransition_Implementation(FName Signature) override;
+	
+	virtual void UpdatePartyMemberStats_Implementation(FBattleCharacterData CharacterData) override;
 
 	virtual void
 	UseInventoryItem_Implementation(FName ID, AFFYBattleCharacter* Source, AFFYBattleCharacter* Target) override;
@@ -225,6 +232,11 @@ public:
 		{
 			return NAME_None;
 		}
+	}
+
+	virtual void EndBattle_Implementation() override
+	{
+		EndEncounter();
 	}
 };
 

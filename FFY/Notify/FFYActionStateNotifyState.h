@@ -5,42 +5,45 @@
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 #include "FFY/FFYBattleEvents.h"
-#include "FFYContextCommandNotifyState.generated.h"
+#include "FFYActionStateNotifyState.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class FFY_API UFFYContextCommandNotifyState : public UAnimNotifyState
+class FFY_API UFFYActionStateNotifyState : public UAnimNotifyState
 {
 	GENERATED_BODY()
 
 public:
 
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
+	EActionState ActionState = EActionState::ACTING;
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
-	FName ContextCommandName;
+	bool bSetWait = false;
 	
 	virtual void NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration,
-	                         const FAnimNotifyEventReference& EventReference) override
+						 const FAnimNotifyEventReference& EventReference) override
 	{
 		Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
 
 		IFFYBattleEvents* Character = Cast<IFFYBattleEvents>(MeshComp->GetOwner());
 		if (Character)
 		{
-			Character->EnableContextCommand_Implementation(ContextCommandName, -1.f);
+			Character->SetActionState_Implementation(ActionState, bSetWait);
 		}
 	}
 
 	virtual void NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
-	                       const FAnimNotifyEventReference& EventReference) override
+						   const FAnimNotifyEventReference& EventReference) override
 	{
 		Super::NotifyEnd(MeshComp, Animation, EventReference);
+
 		IFFYBattleEvents* Character = Cast<IFFYBattleEvents>(MeshComp->GetOwner());
 		if (Character)
 		{
-			Character->DisableContextCommand_Implementation();
+			Character->SetActionState_Implementation(EActionState::IDLE, false);
 		}
 	}
 };

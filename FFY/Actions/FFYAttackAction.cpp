@@ -15,7 +15,7 @@ AFFYAttackAction::AFFYAttackAction()
 	TargetType = ETargetType::SINGLE;
 	ActionType = EActionType::NONE;
 	bIsDefaultTargetEnemy = true;
-	bQueuedAction = false;
+	bQueuedAction = true;
 	bIsPassive = false;
 	ATBCost = 25;
 	HPCost = 0;

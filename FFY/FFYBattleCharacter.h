@@ -16,6 +16,7 @@
 //-------
 #include "FFYBattleCharacter.generated.h"
 
+class UFFYStatusEffectComponent;
 class UNiagaraComponent;
 class UFFYGambitComponent;
 class UFFYBattleCharacterOptionWidget;
@@ -26,11 +27,19 @@ struct FPartySlot;
 class UAnimInstance;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCharacterStatsChanged, FBattleCharacterData&, NewData);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCharacterDefeated, AFFYBattleCharacter*, Character);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnATBValueChanged, float, Value);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCharacterSelected);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionSelected, AFFYAction*, Action, bool, bIsContext);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnActiveStateChanged, EActiveState, NewActiveState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnActionStateChanged, EActionState, NewActionState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnActionSelected, AFFYAction*, Action, bool, bIsContext, float, Duration);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnActionQueued, AFFYAction*, Action, AFFYBattleCharacter*, User, TArray<AFFYBattleCharacter*>, ActionTargets);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWaitActionUsed, AFFYBattleCharacter*, Character);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCharacterDead, AFFYBattleCharacter*, Character);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnContextCommandActivated, AFFYBattleCharacter*, Character);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnContextCommandDeactivated, AFFYBattleCharacter*, Character);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCharacterWeakened, AFFYBattleCharacter*, Character);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCameraActionSelected, AFFYBattleCharacter*, Character, FCameraActionContainer, CameraActionContainer);
 
 //used to map status effects to disabled functions
 USTRUCT(BlueprintType)
@@ -81,11 +90,18 @@ public:
 
 	//DELEGATES:
 	FOnCharacterStatsChanged OnCharacterStatsChanged;
+	FOnCharacterDefeated OnCharacterDefeated;
 	FOnATBValueChanged OnATBValueChanged;
 	FOnCharacterSelected OnCharacterSelected;
+	FOnActiveStateChanged OnActiveStateChanged;
+	FOnActionStateChanged OnActionStateChanged;
 	FOnActionSelected OnActionSelected;
+	FOnActionQueued OnActionQueued;
+	FOnWaitActionUsed OnWaitActionUsed;
 	FOnContextCommandActivated OnContextCommandActivated;
 	FOnContextCommandDeactivated OnContextCommandDeactivated;
+	FOnCharacterWeakened OnCharacterWeakened;
+	FOnCameraActionSelected OnCameraActionSelected;
 	
 
 	//Inherited Variables: 
@@ -112,6 +128,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Niagara", meta = (AllowPrivateAccess = "true"))
 	UNiagaraComponent* NiagaraSystemComponent;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Niagara", meta = (AllowPrivateAccess = "true"))
+	UFFYStatusEffectComponent* StatusEffectComponent;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	UFFYBattleCharacterOptionWidget* SelectionWidget;
 
@@ -140,6 +159,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Animation", meta = (AllowPrivateAccess = "true"))
 	UAnimInstance* AnimInstance;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Battle", meta = (AllowPrivateAccess = "true"))
+	EActiveState ActiveState = EActiveState::ACTIVE;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Animation", meta = (AllowPrivateAccess = "true"))
 	EActionState ActionState = EActionState::IDLE;
 
@@ -156,6 +178,9 @@ public:
 	float ATB = 0;
 
 	int8 Initiative = FMath::RandRange(0, 20);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Battle", meta = (AllowPrivateAccess = "true"))
+	FTimerHandle CCHandle;
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Battle")
 	float DefenseFactor;
@@ -234,6 +259,12 @@ public:
 	TMap<EStatusEffect, FAffectedActionTypes> ActionDisablingEffects;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Battle")
+	TArray<EStatusEffect> LossConditionEffects;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Battle")
+	TArray<EStatusEffect> EXPGainDisablingEffects;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Battle")
 	TArray<EStatusEffect> UndamageableEffects;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Battle")
@@ -273,11 +304,18 @@ public:
 		GetWorld()->GetTimerManager().ClearTimer(PerfectDefenseTimer);
 	};
 
+	UFUNCTION(BlueprintCallable)
+	void StartPerfectDefense()
+	{
+		PerfectDefense = true;
+		GetWorld()->GetTimerManager().SetTimer(PerfectDefenseTimer, this, &AFFYBattleCharacter::EndPerfectDefense, 0.5f, false);
+	}
+
 	//INTERFACE ========================================:
     // --- Widget:
 	virtual void MenuActionSelected_Implementation(AFFYAction* SelectedAction) override
 	{
-		OnActionSelected.Broadcast(SelectedAction, false);
+		OnActionSelected.Broadcast(SelectedAction, false, 0.f);
 	}
 	// --- Battle:
 
@@ -310,6 +348,41 @@ public:
 		return BattleCharacterStats.StatusEffects.Contains(EStatusEffect::KO);
 	}
 
+	virtual void SetVictoryState();
+
+	bool bVictoryState = false;
+
+	bool bQueueState = false;
+
+	virtual void SetActiveState_Implementation(EActiveState NewState) override
+	{
+		switch (NewState)
+		{
+			case EActiveState::ACTIVE:
+				CustomTimeDilation = DefaultTimeDilation;
+				break;
+			case EActiveState::WAIT:
+				CustomTimeDilation = 0.f;
+				break;
+		}
+		ActiveState = NewState;
+		OnActiveStateChanged.Broadcast(NewState);
+	}
+
+	virtual void SetActionState_Implementation(EActionState NewState, bool bSetWait) override
+	{
+		FString ActionString = UEnum::GetValueAsString(ActionState);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("%s: %s"), *BattleCharacterStats.CharacterName.ToString(), *ActionString ));
+		ActionState = NewState;
+		OnActionStateChanged.Broadcast(ActionState);
+
+		if (bSetWait)
+		{
+			//signal to set other characters activestate
+			OnWaitActionUsed.Broadcast(this);
+		}
+	}
+
 	virtual FDamageAttributes GetDamageAttributes_Implementation() override
 	{
 		return DamageAttributes;
@@ -320,8 +393,7 @@ public:
 		DefenseFactor = ATBValue/100;
 		if (DefenseFactor >= 0.5)
 		{
-			PerfectDefense = true;
-			GetWorld()->GetTimerManager().SetTimer(PerfectDefenseTimer, this, &AFFYBattleCharacter::EndPerfectDefense, 0.5f, false);
+			StartPerfectDefense();
 		}
 	}
 
@@ -344,17 +416,22 @@ public:
 		}
 	}
 
+	virtual void StartCameraAction_Implementation(FCameraActionContainer CameraActionContainer) override
+	{
+		OnCameraActionSelected.Broadcast(this, CameraActionContainer);
+	}
+
 	virtual void DisableContextCommand_Implementation() override
 	{
 		if (ActionContainer)
 		{
 			OnContextCommandDeactivated.Broadcast(this);
 			ActionContainer->ContextCommand = nullptr;
-			OnActionSelected.Broadcast(nullptr, true);
+			OnActionSelected.Broadcast(nullptr, true, 0.f);
 		}
 	}
 
-	virtual void EnableContextCommand_Implementation(FName ActionName) override
+	virtual void EnableContextCommand_Implementation(FName ActionName, float Duration) override
 	{
 		if (ActionContainer)
 		{
@@ -362,11 +439,15 @@ public:
 			{
 				if (a)
 				{
-					if (a->Label == ActionName)
+					if (a->Label == ActionName && a->CanUse(this, 1) && a->CanExecute(this))
 					{
 						ActionContainer->ContextCommand = a;
 						OnContextCommandActivated.Broadcast(this);
-						OnActionSelected.Broadcast(ActionContainer->ContextCommand, true);
+						OnActionSelected.Broadcast(ActionContainer->ContextCommand, true, Duration);
+						if (Duration > 0.f) //if not from notify state 
+						{
+							GetWorld()->GetTimerManager().SetTimer(CCHandle, this, &AFFYBattleCharacter::DisableContextCommand_Implementation, Duration, false, -1.f);
+						}
 						return;
 					}
 				}
@@ -427,5 +508,11 @@ public:
 			return NAME_None;
 		}
 	}
+
+	void QueueAction(AFFYAction* Action, const TArray<AFFYBattleCharacter*> ActionTargets)
+	{
+		OnActionQueued.Broadcast(Action, this, ActionTargets);
+	}
+
 	
 };

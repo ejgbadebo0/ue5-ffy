@@ -22,6 +22,7 @@ void FBattleCharacterAnimInstanceProxy::Initialize(UAnimInstance* InAnimInstance
 			if (OwningCharacter)
 			{
 				CharacterMovementComponent = OwningCharacter->GetCharacterMovement();
+				InitializeNegativeEffects();
 				//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Silver, "PROXY INITIALIZED!!!");
 			}
 		}
@@ -35,6 +36,10 @@ void FBattleCharacterAnimInstanceProxy::Update(float DeltaSeconds)
 	if (CharacterMovementComponent)
 	{
 		bIsFalling = CharacterMovementComponent->IsFalling();
+		bIsDead = OwningCharacter->GetIsDead_Implementation();
+		bIsWeak = CheckWeak();
+		bVictory = OwningCharacter->bVictoryState;
+		CurrentActionState = OwningCharacter->ActionState;
 	}
 }
 

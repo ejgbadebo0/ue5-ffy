@@ -45,6 +45,10 @@ protected:
 	bool bHasCustomSelectionWidget = true;
 
 	int ContextIndex = 0;
+
+	//used when switching button groups
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+	bool GuidedSelect = false;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UI, meta = (BindWidget))
 	UWrapBox* WrapBox;
@@ -83,8 +87,28 @@ public:
 
 	void SetDescription(const FText& Description) { if (DescriptionTextBlock) { DescriptionTextBlock->SetText(Description); } };
 
+	void SetGuidedSelect(bool Value)
+	{
+		GuidedSelect = Value;
+	};
+
 	UFUNCTION(BlueprintCallable, Category = UI)
-	void SetCurrentOption(UFFYOptionWidget* Option) { CurrentOption = Option; if (DescriptionTextBlock) { DescriptionTextBlock->SetText(CurrentOption->GetDescription()); } };
+	void SetCurrentOption(UFFYOptionWidget* Option)
+	{
+		if (GuidedSelect) 
+		{
+			if (Option != CurrentOption)
+			{
+				CurrentOption->OnUnselected();
+			}
+			GuidedSelect = false;
+		}
+		CurrentOption = Option;
+		if (DescriptionTextBlock)
+		{
+			DescriptionTextBlock->SetText(CurrentOption->GetDescription());
+		}
+	};
 
 	EMenuMode GetCurrentMenuMode() { return CurrentMenuMode; };
 

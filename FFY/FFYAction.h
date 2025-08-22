@@ -47,6 +47,7 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	FName MenuLabel = "None";
 
+	/* information that is displayed in menus */
 	UPROPERTY(EditDefaultsOnly)
 	FText Description = FText::GetEmpty();
 
@@ -54,6 +55,7 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	uint8 Type = 0;
 
+	/* how many can be targeted by this action */
 	UPROPERTY(EditDefaultsOnly)
 	ETargetType TargetType = ETargetType::NONE;
 	
@@ -62,13 +64,15 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	EActionType ActionType = EActionType::NONE;
 
+	/* will target the other group by default */
 	UPROPERTY(EditDefaultsOnly)
 	bool bIsDefaultTargetEnemy = true;
 
-	/* if false, action is Instant, if true, is Queued */
+	/* if false, action cannot be Queued */
 	UPROPERTY(EditDefaultsOnly)
 	bool bQueuedAction = false;
 
+	/* effects happen at the start of battle and persist */
 	UPROPERTY(EditDefaultsOnly)
 	bool bIsPassive = false;
 
@@ -147,6 +151,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual float GetVariableATBCost(AFFYBattleCharacter* ActionOwner);
 
+	UFUNCTION(BlueprintCallable)
+	virtual FName GetMenuLabel();
 	
 	/*
 	 * Attempt to use action in battle.
@@ -179,6 +185,11 @@ public:
 	 * Determine if can use an action in battle
 	 */
 	virtual bool CanUse(AFFYBattleCharacter* ActionOwner, int8 Targets);
+
+	/*
+	 * Check if meets ATB cost and state conditions
+	 */
+	virtual bool CanExecute(AFFYBattleCharacter* ActionOwner);
 
 	/*
 	 * Calculate cost for performing action for owner to consume.
