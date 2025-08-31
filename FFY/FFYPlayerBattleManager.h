@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 #pragma once
 
@@ -165,12 +165,15 @@ protected:
 	void LevelUp(AFFYBattleCharacter* Character, FBattleEXPData& EXPData);
 
 	
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void ResetBattleActiveState(EActionState NewActionState);
 	
 	//used when character takes action that requires Wait state
 	UFUNCTION()
 	void SetBattleActiveState(AFFYBattleCharacter* Character);
+
+	UFUNCTION(BlueprintCallable)
+	void SetAllWaitMode(AFFYBattleCharacter* Character);
 
 	UFUNCTION()
 	void OnCameraActionSelected(AFFYBattleCharacter* Character, FCameraActionContainer CameraActionContainer);
@@ -180,7 +183,7 @@ protected:
 	{
 		CurrentCameraPriority = 0; 
 	}
-
+	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
@@ -222,9 +225,20 @@ public:
 		}
 		for (auto e : Enemies)
 		{
+			int StartingValues = 0;
 			if (e)
 			{
-				e->ATB = FMath::Clamp(100*(e->BattleCharacterStats.Dexterity/HighestDex) - (20-e->Initiative), 0, 99);
+				if (StartingValues > 0) //manual offset
+				{
+					float Sign = (FMath::RandBool()) ? 1.f : -1.f; 
+					e->ATB = FMath::Clamp(100*(e->BattleCharacterStats.Dexterity/HighestDex) - (20-e->Initiative) + (20 * StartingValues * Sign) , 0, 99);
+					StartingValues++;
+				}
+				else
+				{
+					e->ATB = FMath::Clamp(100*(e->BattleCharacterStats.Dexterity/HighestDex) - (20-e->Initiative), 0, 99);
+					StartingValues++;
+				}
 				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString::Printf(TEXT("%s: INITIATIVE = %f"), *e->BattleCharacterStats.CharacterName.ToString(), 100*(e->BattleCharacterStats.Dexterity/HighestDex) - (20-e->Initiative)));
 			}
 		}
@@ -236,13 +250,19 @@ public:
 	//INTERFACE:
 
 	virtual void ActionUsed_Implementation(FName ActionName, bool bIsEnemy) override;
-	
+
 	//===========
 
 	//BP EVENTS:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnCameraActionStarted(AFFYBattleCharacter* Character, FCameraActionContainer CameraActionContainer);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void StopOngoingCameraAction();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnFocusStateChanged(AFFYBattleCharacter* Character, bool bIsFocused);
 
 	//===========
 };

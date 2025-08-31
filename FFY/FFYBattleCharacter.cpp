@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 
 #include "FFYBattleCharacter.h"
@@ -220,6 +220,12 @@ void AFFYBattleCharacter::Tick(float DeltaTime)
 
 }
 
+void AFFYBattleCharacter::OnFreeActionUse()
+{
+	bIsFocused = false;
+	OnFocusedStateChanged.Broadcast(this, bIsFocused);
+}
+
 void AFFYBattleCharacter::OnWeaponLoaded()
 {
 	//GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::White, "WEAPON LOADED");
@@ -256,6 +262,7 @@ void AFFYBattleCharacter::Consume(float ATBCost, float HPCost, float MPCost)
 	if (ATBCost != 0)
 	{
 		ATB -= ATBCost;
+		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Red, FString::Printf(TEXT("%s: %f"), *BattleCharacterStats.CharacterName.ToString(), ATB));
 		OnATBValueChanged.Broadcast(ATB);
 	}
 	if (HPCost != 0)
@@ -282,6 +289,7 @@ void AFFYBattleCharacter::UpdateATB(float DeltaTimeX)
 	if (BattleCharacterStats.StatusEffects.IsEmpty())
 	{
 		ATB = FMath::Clamp(ATB + (ATBFactor * DeltaTimeX), 0.f, 100.f);
+		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::White, FString::Printf(TEXT("%s: %f"), *BattleCharacterStats.CharacterName.ToString(), ATB));
 		OnATBValueChanged.Broadcast(ATB);
 	}
 	else
@@ -298,6 +306,7 @@ void AFFYBattleCharacter::UpdateATB(float DeltaTimeX)
 		ATB = FMath::Clamp(ATB + (ATBFactor * DeltaTimeX), 0.f, 100.f);
 		if (ATBFactor > 0.f)
 		{
+			GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::White, FString::Printf(TEXT("%s: %f"), *BattleCharacterStats.CharacterName.ToString(), ATB));
 			OnATBValueChanged.Broadcast(ATB);
 		}
 	}
@@ -325,7 +334,7 @@ void AFFYBattleCharacter::UpdateMotionWarpTransform(FName WarpName, FVector Warp
 }
 
 // Executed once a valid hit is evaluated
-FDamageEventResult AFFYBattleCharacter::InflictDamage(const FDamageAttributes& SourceDamage, int SourceLevel)
+FDamageEventResult AFFYBattleCharacter::InflictDamage(const FDamageAttributes& SourceDamage, int SourceLevel, float CriticalModifier)
 {
 	//GEngine->AddOnScreenDebugMessage(-1, 35.f, FColor::Orange, "DAMAGE: =====================" );
 	//GEngine->AddOnScreenDebugMessage(-1, 35.f, FColor::Red, FString::Printf(TEXT("Base Damage Amount: %f"), SourceDamage.DamageAmount ));
@@ -350,6 +359,11 @@ FDamageEventResult AFFYBattleCharacter::InflictDamage(const FDamageAttributes& S
 
 	//modifier for base defense stats
 	float StatModifier = DefenseStat/2;
+
+
+	//modifiers for critical hit chance
+	bool bIsCrit = (CriticalModifier > FMath::RandRange(0.f, 1.f));
+	float CritDmgModifier = ((bIsCrit)) ? 1.5f : 1.f; //50% increase to final damage if critical
 	
 	//GEngine->AddOnScreenDebugMessage(-1, 35.f, FColor::Red, FString::Printf(TEXT("Initial DefStatModifier: %f"), StatModifier ));
 	
@@ -365,14 +379,14 @@ FDamageEventResult AFFYBattleCharacter::InflictDamage(const FDamageAttributes& S
 	float LevelDamageModifier =  (SourceDamage.DamageAmount != 0.f) ? SourceDamage.DamageAmount + ((SourceLevel - BattleCharacterStats.LV) * 2) : 0.f; 
 	//GEngine->AddOnScreenDebugMessage(-1, 35.f, FColor::Red, FString::Printf(TEXT("LevelDmgModifier: %f"), LevelDamageModifier ));
 	
-	float FinalDamage = FMath::Floor(FMath::Clamp(((LevelDamageModifier - StatModifier) * DefendModifier), 0.f, DamageCap));
+	float FinalDamage = FMath::Floor(FMath::Clamp(((LevelDamageModifier - StatModifier) * DefendModifier) * CritDmgModifier, 0.f, DamageCap));
 	//GEngine->AddOnScreenDebugMessage(-1, 35.f, FColor::Red, FString::Printf(TEXT("DAMAGE CALC: (%f - %f) * %f = %f"), LevelDamageModifier, StatModifier, DefendModifier, FinalDamage ));
 	//GEngine->AddOnScreenDebugMessage(-1, 35.f, FColor::Red, FString::Printf(TEXT("FinalDamage: %f"), FinalDamage ));
 	//GEngine->AddOnScreenDebugMessage(-1, 35.f, FColor::Orange, "=========================" );
 
     float PreDamageHPRatio = (BattleCharacterStats.HP/BattleCharacterStats.MaxHP);
 	//DEAL FINAL DAMAGE ==========================================
-	BattleCharacterStats.HP = FMath::Max(BattleCharacterStats.HP - FinalDamage, 0.0f);
+	BattleCharacterStats.HP = FMath::Max(BattleCharacterStats.HP - FinalDamage, (PerfectDefense) ? 1.f : 0.0f);
 	
 	if (BattleCharacterStats.HP <= 0)
 	{
@@ -398,6 +412,33 @@ FDamageEventResult AFFYBattleCharacter::InflictDamage(const FDamageAttributes& S
 	}
 	else 
 	{
+
+		//defense animation montages
+		IFFYAnimationControls* Instance = Cast<IFFYAnimationControls>(AnimInstance);
+		
+		switch (this->ActionState)
+		{
+		default:
+			break;
+		case EActionState::DEFENDING:
+			if (Instance)
+			{
+				Instance->PlayActionMontage_Implementation((PerfectDefense) ? FName("Parry") : FName("Block"), false);
+				if (PerfectDefense) //on parry, refund 50 ATB
+				{
+					ATB = FMath::Min(ATB + 50.f, 100.f);
+					UpdateATB(0.0f);
+				}
+			}
+			break;
+		case EActionState::IDLE:
+			if (Instance && FVector::Distance(GetActorLocation(), DefaultTransform.GetLocation()) <= 20.f && FinalDamage > 0.f) //prevent repositioning to be overriden by anim
+			{
+				Instance->PlayActionMontage_Implementation(FName("Damage"), false);
+			}
+			break;
+		}
+		
 		//alert that character is low HP for specific abilities
 		if ((BattleCharacterStats.HP/BattleCharacterStats.MaxHP) <= 0.25f && PreDamageHPRatio > 0.25f)
 		{
@@ -487,6 +528,7 @@ FDamageEventResult AFFYBattleCharacter::InflictDamage(const FDamageAttributes& S
 	OnCharacterStatsChanged.Broadcast(BattleCharacterStats);
 	
 	return FDamageEventResult(true,
+		bIsCrit,
 		false,
 		PerfectDefense,
 		FinalDamage,
@@ -516,8 +558,8 @@ bool AFFYBattleCharacter::ReceiveDamage_Implementation(
 		}
 	}
 
+	DamageSource = Source;
 	FDamageAttributes SourceDamageAttributes = Source->GetDamageAttributes_Implementation();
-
 
 	/*
 	float DamageAmount = 0;
@@ -537,7 +579,7 @@ bool AFFYBattleCharacter::ReceiveDamage_Implementation(
 			break;
 		case EDamageModifier::MAGIC: //magic attacks will always hit for now
 
-			DamageEventResult = InflictDamage(SourceDamageAttributes, Source->BattleCharacterStats.LV);
+			DamageEventResult = InflictDamage(SourceDamageAttributes, Source->BattleCharacterStats.LV, 0);
 			DamageTakenEvent(DamageEventResult);
 			return true;
 		
@@ -553,20 +595,22 @@ bool AFFYBattleCharacter::ReceiveDamage_Implementation(
 				//luck
 				float LuckModifier = FMath::Clamp(BattleCharacterStats.Luck - Source->BattleCharacterStats.Luck, 0.f, 1.f);
 
+				float CritModifier = FMath::Min((Source->BattleCharacterStats.Precision/255), 0.2) + (Source->BattleCharacterStats.Luck/100.f);
+
 				//final probability
 				float Hit = FMath::Clamp(((HitBase * AccuracyModifier) - LuckModifier), 0.f, 1.f);
-				float Evade = FMath::RandRange(0.f, 1.f);
+				float Miss = FMath::RandRange(0.f, 1.f);
 
 				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Yellow, "==========================");
-				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString::Printf(TEXT("HIT RESULT -> Hit: %f / Evade: %f"), Hit, Evade));
+				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString::Printf(TEXT("HIT RESULT -> Hit: %f / Miss: %f / Crit: %f"), Hit, Miss, CritModifier));
 				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString::Printf(TEXT("HIT MODIFIERS -> (%f * %f) - %f"), HitBase, AccuracyModifier, LuckModifier));
 				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Yellow, "==========================");
 				//Successful hit from physical attack
-				if (Hit > Evade)
+				if (Hit > Miss)
 				{
 					//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(FString("DAMAGE TAKEN -> Hit: %f / Evade: %f"), Hit, Evade));	
 
-					DamageEventResult = InflictDamage(SourceDamageAttributes, Source->BattleCharacterStats.LV);
+					DamageEventResult = InflictDamage(SourceDamageAttributes, Source->BattleCharacterStats.LV, CritModifier);
 					DamageEventResult.SourceLocation = Source->GetActorLocation();
 					DamageTakenEvent(DamageEventResult);
 					return true;
@@ -579,8 +623,15 @@ bool AFFYBattleCharacter::ReceiveDamage_Implementation(
 	//reached due to miss
 	FText ResultText = (PerfectDefense) ? FText::FromString("") : FText::FromString("Miss");
 	//GEngine->AddOnScreenDebugMessage(-1, 35.f, FColor::Orange, "MISSED" );
+	if (PerfectDefense && !Source->BattleCharacterStats.StatusEffects.Contains(EStatusEffect::BLIND)) //perfect evade condition, don't reward on blind enemies
+	{
+		OnPerfectEvade();
+		bIsFocused = true;
+		OnFocusedStateChanged.Broadcast(this, bIsFocused);
+	}
 
 	DamageEventResult.bWasHit = false;
+	DamageEventResult.bIsCrit = false;
 	DamageEventResult.bIsHealing = false;
 	DamageEventResult.bIsPerfectDefense = PerfectDefense;
 	DamageEventResult.DamageReceived = 0;
@@ -714,7 +765,11 @@ bool AFFYBattleCharacter::ReceiveHealing_Implementation(AFFYBattleCharacter* Sou
 void AFFYBattleCharacter::SetVictoryState()
 {
 	bool SetCondition = true;
-	for (auto e : BattleCharacterStats.StatusEffects)
+	if (bIsFocused) //make sure other actors are unpaused
+	{
+		OnFreeActionUse();
+	}
+	for (auto e : BattleCharacterStats.StatusEffects) //make sure in a state that actor can play victory animation
 	{
 		if (EXPGainDisablingEffects.Contains(e))
 		{

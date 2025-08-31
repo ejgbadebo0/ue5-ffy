@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 
 #include "FFYMasterWidget.h"
@@ -46,6 +46,10 @@ void UFFYMasterWidget::NativeDestruct()
 	if (WidgetSwitcher)
 	{
 		NavigateToMenu(FName("Main"), NAME_None);
+	}
+	if (bShouldKeepTime)
+	{
+		
 	}
 }
 

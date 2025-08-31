@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 
 #include "FFYItemAction.h"
@@ -40,7 +40,7 @@ void AFFYItemAction::Redirect(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattl
 	Super::Redirect(ActionOwner, Targets);
 }
 
-void AFFYItemAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target)
+void AFFYItemAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target, int HitIndex)
 {
 	//can't access World object
 	OnItemActionUse.Broadcast(UseItemID, ActionOwner, Target);

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 #pragma once
 
@@ -21,5 +21,5 @@ public:
 	virtual void ExecuteAction(FBattleCharacterData& Owner, TArray<FBattleCharacterData>& Targets) override;
 	virtual void Redirect(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattleCharacter*> Targets) override;
 	virtual void DebugLocations(FVector Location1, FVector Normal1, FVector Location2, FVector Normal2) override;
-	virtual void Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target) override;
+	virtual void Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target, int HitIndex) override;
 };

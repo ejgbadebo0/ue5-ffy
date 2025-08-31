@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 #pragma once
 
@@ -260,6 +260,10 @@ struct FFY_API FCameraActionContainer
 	//current CameraActions will be overriden by others with higher values
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	uint8 Priority = 0;
+
+	//if true, can override CameraActions of the same level of priority
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bCanOverride = false;
 
 	// 0-1: if random float exceeds value, this CameraAction won't be played
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 
 #include "FFYContextCommandMenuWidget.h"
@@ -24,7 +24,7 @@ void UFFYContextCommandMenuWidget::LoadContextCommand(AFFYBattleCharacter* Chara
 	if (Character)
 	{
 		// prioritize the right slot, if occupied use the left
-		if (RightInputCCWidget->CharacterReference == nullptr || RightInputCCWidget->CharacterReference == Character)
+		if (RightInputCCWidget->CharacterReference == nullptr || RightInputCCWidget->bIsReloading)
 		{
 			RightInputCCWidget->Reload(Character);
 		}
@@ -42,8 +42,9 @@ void UFFYContextCommandMenuWidget::UnloadContextCommand(AFFYBattleCharacter* Cha
 		if (RightInputCCWidget->CharacterReference == Character)
 		{
 			RightInputCCWidget->Unload();
+			return;
 		}
-		else
+		if (LeftInputCCWidget->CharacterReference == Character)
 		{
 			LeftInputCCWidget->Unload();
 		}

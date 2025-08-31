@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 
 #include "FFYFinishAction.h"
@@ -28,7 +28,7 @@ float AFFYFinishAction::GetCalculatedActionValue(AFFYBattleCharacter* ActionOwne
 	return FMath::Floor(Super::GetCalculatedActionValue(ActionOwner) * FMath::RandRange(1.5f, 2.f));
 }
 
-void AFFYFinishAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target)
+void AFFYFinishAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target, int HitIndex)
 {
 	EAttackType InAttackType = (ActionOwner->BattleCharacterStats.Equipment.Weapon.bIsEquipable) ? ActionOwner->BattleCharacterStats.Equipment.Weapon.EquipmentData.AttackType : EAttackType::MELEE;
 	EDamageModifier InDamageModifier = (ActionOwner->BattleCharacterStats.Equipment.Weapon.bIsEquipable) ? ActionOwner->BattleCharacterStats.Equipment.Weapon.EquipmentData.DamageModifier : EDamageModifier::PHYSICAL;

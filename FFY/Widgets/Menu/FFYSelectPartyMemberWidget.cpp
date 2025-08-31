@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 
 #include "FFYSelectPartyMemberWidget.h"
@@ -76,6 +76,17 @@ void UFFYSelectPartyMemberWidget::SetSelectAll(bool Value)
 			{
 				o->Flicker(bSelectAll);
 			}
+		}
+	}
+}
+
+void UFFYSelectPartyMemberWidget::ContextRefresh_Implementation(int Index)
+{
+	for (auto o : Options)
+	{
+		if (o)
+		{
+			
 		}
 	}
 }

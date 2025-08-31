@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 
 #include "FFYBattleCharacterOptionWidget.h"
@@ -33,9 +33,11 @@ void UFFYBattleCharacterOptionWidget::OnReset()
 
 void UFFYBattleCharacterOptionWidget::OnDestroy()
 {
+	GEngine->AddOnScreenDebugMessage(-1, 50.f, (Enemy) ? FColor::Magenta : FColor::Cyan, "BC BUTTON DESTROYED");
 	SetIsDisabled(true);
+	SetVisibility(ESlateVisibility::Collapsed);
 	SetRenderOpacity(0.f);
-	this->RemoveFromParent();
+	//this->RemoveFromParent();
 }
 
 void UFFYBattleCharacterOptionWidget::InitializeFromWidget(UFFYPartyHUDSlotOptionWidget* InWidget)

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 
 #include "FFYBattleWidget.h"
@@ -51,13 +51,14 @@ void UFFYBattleWidget::DefendInputEvent_Implementation()
 {
 	Super::DefendInputEvent_Implementation();
 
-	if (BattleContext)
+	if (BattleContext && !bIsSwitching)
 	{
 		for (auto a : BattleContext->ActionContainer->MainCommands)
 		{
 			if (a && a->Label == FName("Defend"))
 			{
 				GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Red, "DEFEND");
+				a->ExecuteAction(BattleContext, BattleContext->Targets);
 				break;
 			}
 		}
@@ -75,6 +76,7 @@ void UFFYBattleWidget::ContextCommandInputEvent_Implementation(int DeltaIndex)
 void UFFYBattleWidget::LoadBattleContext_Implementation(AFFYBattleCharacter* Character)
 {
 	Super::LoadBattleContext_Implementation(Character);
+	bIsSwitching = true;
 	
 	//Cancel any ongoing context widget events and reset for new character
 	EndSelection_Implementation();
@@ -102,6 +104,7 @@ void UFFYBattleWidget::LoadBattleContext_Implementation(AFFYBattleCharacter* Cha
 			}
 		}
 	}
+	bIsSwitching = false;
 
 }
 

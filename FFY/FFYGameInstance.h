@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 #pragma once
 
@@ -8,6 +8,7 @@
 #include "FFYDataStructures.h"
 //-----
 #include "FFYBattleEvents.h"
+#include "FFYWidgetEvents.h"
 #include "FFYCharacter.h"
 #include "FFYTransitions.h"
 #include "IDetailTreeNode.h"
@@ -18,6 +19,7 @@
 
 class UFFYActionContainer;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryUpdated);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayTimeUpdated, FText, PTText);
 
 class AFFYAction;
 class UFFYItem;
@@ -77,8 +79,8 @@ struct FFY_API FPlayerPreBattleInfo
 /**
  *  Main game class, holds party info/progress.
  */
-UCLASS()
-class FFY_API UFFYGameInstance : public UGameInstance, public IFFYTransitions, public IFFYBattleEvents
+UCLASS(BlueprintType, Blueprintable)
+class FFY_API UFFYGameInstance : public UGameInstance, public IFFYTransitions, public IFFYBattleEvents, public IFFYWidgetEvents
 {
 	GENERATED_BODY()
 
@@ -94,6 +96,8 @@ class FFY_API UFFYGameInstance : public UGameInstance, public IFFYTransitions, p
 public:
 	//DELEGATES:
 	FOnInventoryUpdated OnInventoryUpdated;
+	UPROPERTY(BlueprintAssignable)
+	FOnPlayTimeUpdated OnPlayTimeUpdated;
 	//-----------
 
 	
@@ -125,9 +129,9 @@ public:
 	{
 		FTextFormat FMT = FTextFormat::FromString("{Hours}:{Minutes}:{Seconds}");
 		FFormatNamedArguments Args;
-		FText SVal = (Seconds < 9) ? FText::FromString(FString::Printf(TEXT("0%d"), Seconds)) : FText::FromString(FString::FromInt(Seconds));
-		FText MVal = (Minutes < 9) ? FText::FromString(FString::Printf(TEXT("0%d"), Minutes)) : FText::FromString(FString::FromInt(Minutes));
-		FText HVal = (Hours < 9) ? FText::FromString(FString::Printf(TEXT("0%d"), Hours)) : FText::FromString(FString::FromInt(Hours));
+		FText SVal = (Seconds < 10) ? FText::FromString(FString::Printf(TEXT("0%d"), Seconds)) : FText::FromString(FString::FromInt(Seconds));
+		FText MVal = (Minutes < 10) ? FText::FromString(FString::Printf(TEXT("0%d"), Minutes)) : FText::FromString(FString::FromInt(Minutes));
+		FText HVal = (Hours < 10) ? FText::FromString(FString::Printf(TEXT("0%d"), Hours)) : FText::FromString(FString::FromInt(Hours));
 		Args.Add("Hours",HVal);
 		Args.Add("Minutes", MVal);
 		Args.Add("Seconds", SVal );
@@ -209,7 +213,7 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = UI, meta = (AllowPrivateAccess = "true"))
 	UUserWidget* TransitionWidget;
-
+	
 	//INTERFACE: =================
 	
 	void StartTransition_Implementation(FName Signature) override;
@@ -237,6 +241,11 @@ public:
 	virtual void EndBattle_Implementation() override
 	{
 		EndEncounter();
+	}
+
+	virtual void UpdatePlayTime_Implementation() override
+	{
+		ElapsePlayTime();
 	}
 };
 

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 
 #include "FFYPlayerBattleManager.h"
@@ -51,9 +51,13 @@ void AFFYPlayerBattleManager::BeginPlay()
 			if (PartySpawn && BattleWidget)
 			{
 				Party.Emplace(PartySpawn);
+				//Bind party member delegates
 				PartySpawn->OnCharacterDefeated.AddUniqueDynamic(this, &AFFYPlayerBattleManager::CheckLossCondition);
 				PartySpawn->OnWaitActionUsed.AddUniqueDynamic(this, &AFFYPlayerBattleManager::SetBattleActiveState);
+				PartySpawn->OnFocusedStateChanged.AddUniqueDynamic(this, &AFFYPlayerBattleManager::OnFocusStateChanged);
 				PartySpawn->OnCameraActionSelected.AddUniqueDynamic(this, &AFFYPlayerBattleManager::OnCameraActionSelected);
+
+				//===============
 				BattleWidget->AddHUDSlot(PartySpawn);
 			}
 		}
@@ -295,6 +299,11 @@ void AFFYPlayerBattleManager::CheckLossCondition(AFFYBattleCharacter* Character)
 
 	bool Result = true;
 	
+	if (Character->bIsFocused) //if in focused state, cancel
+	{
+		Character->OnFreeActionUse();
+	}
+	
 	for (auto p : Party) //is there still a party member able to act
 	{
 		bool Condition = false;
@@ -527,33 +536,40 @@ void AFFYPlayerBattleManager::SetBattleActiveState(AFFYBattleCharacter* Characte
 	{
 		Character->OnActionStateChanged.AddUniqueDynamic(this, &AFFYPlayerBattleManager::ResetBattleActiveState);
 
-		for (auto c : Party)
-		{
-			if (c != Character)
-			{
-				c->SetActiveState_Implementation(EActiveState::WAIT);
-			}
-		}
-		for (auto e : Enemies)
-		{
-			if (e != nullptr && e != Character)
-			{
-				e->SetActiveState_Implementation(EActiveState::WAIT);
-			}
-		}
+		SetAllWaitMode(Character);
+	}
+}
 
-		if (BattleWidget)
+void AFFYPlayerBattleManager::SetAllWaitMode(AFFYBattleCharacter* Character)
+{
+	for (auto c : Party)
+	{
+		if (c != Character)
 		{
-			BattleWidget->ActiveModeSwitched(EActiveState::WAIT);
+			c->SetActiveState_Implementation(EActiveState::WAIT);
 		}
+	}
+	for (auto e : Enemies)
+	{
+		if (e != nullptr && e != Character)
+		{
+			e->SetActiveState_Implementation(EActiveState::WAIT);
+		}
+	}
+
+	if (BattleWidget)
+	{
+		BattleWidget->ActiveModeSwitched(EActiveState::WAIT);
 	}
 }
 
 void AFFYPlayerBattleManager::OnCameraActionSelected(AFFYBattleCharacter* Character,
-	FCameraActionContainer CameraActionContainer)
+                                                     FCameraActionContainer CameraActionContainer)
 {
-	if (Character && CameraActionContainer.Priority > CurrentCameraPriority)
+	if (Character && (CameraActionContainer.Priority > CurrentCameraPriority ||
+		(CameraActionContainer.bCanOverride && CameraActionContainer.Priority == CurrentCameraPriority)))
 	{
+		StopOngoingCameraAction();
 		CurrentCameraPriority = CameraActionContainer.Priority;
 		OnCameraActionStarted(Character, CameraActionContainer);
 	}
@@ -569,8 +585,10 @@ void AFFYPlayerBattleManager::UpdateEnemies(TArray<AFFYBattleCharacter*> LoadedE
 			if (BattleWidget)
 			{
 				BattleWidget->AddHUDSlot(Enemies[i]);
+				//Enemies: Bind delegates
 				Enemies[i]->OnCharacterDefeated.AddUniqueDynamic(this, &AFFYPlayerBattleManager::CheckWinCondition);
 				Enemies[i]->OnWaitActionUsed.AddUniqueDynamic(this, &AFFYPlayerBattleManager::SetBattleActiveState);
+				Enemies[i]->OnCameraActionSelected.AddUniqueDynamic(this, &AFFYPlayerBattleManager::OnCameraActionSelected);
 			}
 		}
 }
@@ -579,5 +597,4 @@ void AFFYPlayerBattleManager::ActionUsed_Implementation(FName ActionName, bool b
 {
 	ActionWidget->OnActionUsed(ActionName, bIsEnemy);
 }
-
 

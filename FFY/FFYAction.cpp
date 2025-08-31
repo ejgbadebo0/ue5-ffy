@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 
 #include "FFYAction.h"
@@ -28,7 +28,14 @@ FName AFFYAction::GetMenuLabel()
 
 void AFFYAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattleCharacter*> Targets)
 {
-	if (CanUse(ActionOwner, Targets.Num())) //has the resources and not inhibited by status
+	//can use for free
+	if (ActionOwner->bIsFocused)
+	{
+		FreeUse(ActionOwner, Targets);
+		return;
+	}
+	//has the resources and not inhibited by status
+	if (CanUse(ActionOwner, Targets.Num()))
 	{
 		
 		if (!CanExecute(ActionOwner) || (ActionOwner->ActionState == EActionState::ACTING) || (ActionOwner->ActiveState == EActiveState::WAIT)) //if not currently in a state where character can expend ATB
@@ -52,7 +59,10 @@ void AFFYAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFFYBatt
 		//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("Action %s, by: %s"), *Astr, *Ostr ));
 
 		for (auto i : Targets) {
-			FString Tstr = i->BattleCharacterStats.CharacterName.ToString();
+			if (i)
+			{
+				FString Tstr = i->BattleCharacterStats.CharacterName.ToString();
+			}
 			//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("Performed on: %s"), *Tstr));
 		}
 		//===========
@@ -93,7 +103,7 @@ void AFFYAction::ExecuteAction(FBattleCharacterData& ActionOwner, FBattleCharact
 {
 }
 
-void AFFYAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target)
+void AFFYAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target, int HitIndex)
 {
 	return;
 }
@@ -152,6 +162,32 @@ void AFFYAction::Consume(AFFYBattleCharacter* ActionOwner, int8 Targets)
 	float MPConsume = (TargetType == ETargetType::BOTH) ? MPCost * Targets : MPCost;
 
 	ActionOwner->Consume(ATBConsume, HPConsume, MPConsume);
+}
+
+void AFFYAction::FreeUse(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattleCharacter*> Targets)
+{
+	//Set variables for delayed effects separate from animation
+	ActionOwner->ActionContainer->LastAction = this;
+	ActionOwner->Targets = Targets;
+
+	//reset to Idle in case of Defending
+	if (ActionOwner->ActionState == EActionState::DEFENDING && ActionType != EActionType::STATE)  
+	{
+		//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Silver, "ACTION OWNER VALID");
+		ActionOwner->ActionState = EActionState::IDLE;
+	}
+	//Play animation tied to this action
+	IFFYAnimationControls* AnimInstance = Cast<IFFYAnimationControls>(ActionOwner->AnimInstance);
+		
+	if (AnimInstance != nullptr)
+	{
+		//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Silver, "ANIM INSTANCE VALID: Play Montage");
+		AnimInstance->PlayActionMontage_Implementation(Label, (Targets.Num() > 1));
+
+		ActionOwner->ActionUsed_Implementation(GetMenuLabel(), ActionOwner->ActorHasTag(FName("Enemy")));
+	}
+	//having used a free action
+	ActionOwner->OnFreeActionUse();
 }
 
 void AFFYAction::DebugLocations(FVector Location1, FVector Normal1, FVector Location2, FVector Normal2)

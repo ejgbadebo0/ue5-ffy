@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 #pragma once
 
@@ -20,6 +20,11 @@ class FFY_API UFFYCameraActionNotify : public UAnimNotify
 	
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category="Notify", meta=(AllowPrivateAccess=true))
 	TArray<FCameraActionContainer> CameraActionContainers;
+
+	virtual FLinearColor GetEditorColor() override
+	{
+		return FLinearColor(0.1625490f, 0.0f, 1.0f);
+	}
 
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
 	                    const FAnimNotifyEventReference& EventReference) override

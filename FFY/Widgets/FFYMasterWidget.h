@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 #pragma once
 
@@ -50,11 +50,17 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = UI)
 	EMenuMode CurrentMenuMode;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = UI)
+	int TimeInMenu = 0;
+
 public:
 	//DELEGATE:
 	UPROPERTY(BlueprintAssignable)
 	FOnMenuChanged OnMenuChanged;
 	//--------
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UI)
+	bool bShouldKeepTime = false;
 	
 	virtual void NavigateToMenu(FName Menu, FName ContextName);
 

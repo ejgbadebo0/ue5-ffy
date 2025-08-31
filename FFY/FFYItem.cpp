@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 
 #include "FFYItem.h"
@@ -131,7 +131,7 @@ void UFFYItem::BattleUse(FItemData& Item, AFFYBattleCharacter* User, AFFYBattleC
 	DecrementItem(Item);
 	//call event to display result
 	Target->OnCharacterStatsChanged.Broadcast(Target->BattleCharacterStats);
-	Target->DamageTakenEvent(FDamageEventResult(Result.bWasUsed, true, false, Result.Amount, Result.ResultDescription));
+	Target->DamageTakenEvent(FDamageEventResult(Result.bWasUsed, false, true, false, Result.Amount, Result.ResultDescription));
 
 }
 

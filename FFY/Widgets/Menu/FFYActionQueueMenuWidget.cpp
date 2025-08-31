@@ -1,9 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
-#include "FFY/FFYBattleCharacter.h"
 
 #include "FFYActionQueueMenuWidget.h"
-
+#include "FFY/FFYBattleCharacter.h"
 #include "Components/WrapBox.h"
 #include "FFY/Widgets/Option/FFYActionQueueOptionWidget.h"
 

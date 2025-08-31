@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 
 #include "FFYContextCommandOptionWidget.h"
@@ -43,6 +43,7 @@ void UFFYContextCommandOptionWidget::Reload(AFFYBattleCharacter* Character)
 void UFFYContextCommandOptionWidget::Unload()
 {
 	SetIsDisabled(true);
+	CharacterReference = nullptr;
 	OnUnload();
 }
 

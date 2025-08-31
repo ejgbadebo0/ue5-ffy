@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 #pragma once
 
@@ -36,7 +36,7 @@ public:
 	
 	virtual FText GetInputKeyText_Implementation() override
 	{
-		return FText::FromString("<img id=\"LeftMouseButton\"></> = Confirm\n \n <img id=\"RightMouseButton\"></> = Cancel\n \n <img id=\"Q\"></>/<img id=\"E\"></> = Cycle Members\n \n");
+		return FText::FromString("<img id=\"LeftMouseButton\"></> = Confirm\n \n <img id=\"RightMouseButton\"></> = Cancel\n \n <img id=\"Q\"></>/<img id=\"E\"></> = Cycle Members\n <img id=\"LeftCtrl\"></> = Defend\n \n");
 	}
 
 	virtual UFFYSelectPartyMemberWidget* GetSelectionWidget_Implementation() override;

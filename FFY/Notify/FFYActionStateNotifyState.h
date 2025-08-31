@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 #pragma once
 
@@ -22,9 +22,14 @@ public:
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
 	bool bSetWait = false;
-	
+
+	virtual FLinearColor GetEditorColor() override
+	{
+		return FLinearColor(0.274509f, 0.5568627f, 0.0f);
+	}
+
 	virtual void NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration,
-						 const FAnimNotifyEventReference& EventReference) override
+	                         const FAnimNotifyEventReference& EventReference) override
 	{
 		Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
 

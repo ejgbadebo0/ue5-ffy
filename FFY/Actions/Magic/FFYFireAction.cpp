@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 
 #include "FFYFireAction.h"
@@ -52,7 +52,7 @@ void AFFYFireAction::Redirect(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattl
 	Super::Redirect(ActionOwner, Targets);
 }
 
-void AFFYFireAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target)
+void AFFYFireAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target, int HitIndex)
 {
 	ActionOwner->UpdateDamageAttributes(
 	GetCalculatedActionValue(ActionOwner),

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 #pragma once
 
@@ -21,7 +21,9 @@ class FFY_API UFFYBattleWidget : public UFFYMasterWidget
 {
 	GENERATED_BODY()
 
-
+	UPROPERTY(VisibleAnywhere, Category="Debug")
+	bool bIsSwitching;
+	
 public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UI, meta = (BindWidget));

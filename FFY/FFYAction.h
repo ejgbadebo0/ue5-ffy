@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 #pragma once
 
@@ -174,7 +174,7 @@ public:
 	 * Custom implementation for action's effect
 	 */
 	UFUNCTION(BlueprintCallable)
-	virtual void Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target);
+	virtual void Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target, int HitIndex);
 
 	/*
 	 * Determine if can use a magic ability in menu.
@@ -195,6 +195,11 @@ public:
 	 * Calculate cost for performing action for owner to consume.
 	 */
 	virtual void Consume(AFFYBattleCharacter* ActionOwner, int8 Targets);
+
+	/*
+	 * In cases where character has a resource-free use of this action
+	 */
+	virtual void FreeUse(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattleCharacter*> Targets);
 
 	virtual void DebugLocations(FVector Location1, FVector Normal1, FVector Location2, FVector Normal2);
 

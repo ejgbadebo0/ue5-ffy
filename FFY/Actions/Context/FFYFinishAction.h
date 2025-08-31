@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 #pragma once
 
@@ -18,5 +18,5 @@ class FFY_API AFFYFinishAction : public AFFYAttackAction
 
 public:
 	virtual float GetCalculatedActionValue(AFFYBattleCharacter* ActionOwner) override;
-	virtual void Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target) override;
+	virtual void Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target, int HitIndex) override;
 };

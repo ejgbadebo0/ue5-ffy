@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 #pragma once
 
@@ -35,6 +35,10 @@ public:
 	//Unselect all options
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void ResetOptions();
+
+	//update playtime through paused widgets
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void UpdatePlayTime();
 
 	//Called up by OptionWidget to PartySelectionMenu
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
@@ -124,5 +128,4 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void MenuActionSelected(AFFYAction* SelectedAction);
 	
-
 };

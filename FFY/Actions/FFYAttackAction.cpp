@@ -1,8 +1,9 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 
 #include "FFYAttackAction.h"
 //ext includes
+#include "FFY/FFYAnimationControls.h"
 #include "FFY/FFYBattleCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -69,7 +70,18 @@ void AFFYAttackAction::ExecuteAction(FBattleCharacterData& ActionOwner, TArray<F
 
 void AFFYAttackAction::Redirect(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattleCharacter*> Targets)
 {
-	Super::Redirect(ActionOwner, Targets);
+	FVector EnemyFront = Targets[0]->GetActorLocation() + (Targets[0]->GetActorForwardVector() * 150.f) ;
+	ActionOwner->UpdateMotionWarpTransform("TargetAttackWarp",
+		EnemyFront,
+		UKismetMathLibrary::FindLookAtRotation(ActionOwner->GetActorLocation(), Targets[0]->GetActorLocation())
+		);
+	
+	IFFYAnimationControls* AnimInstance = Cast<IFFYAnimationControls>(ActionOwner->AnimInstance);
+		
+	if (AnimInstance != nullptr)
+	{
+		AnimInstance->PlayActionMontage_Implementation(Label, (Targets.Num() > 1));
+	}
 }
 
 void AFFYAttackAction::DebugLocations(FVector Location1, FVector Normal1, FVector Location2, FVector Normal2)
@@ -94,7 +106,7 @@ void AFFYAttackAction::DebugLocations(FVector Location1, FVector Normal1, FVecto
 	return;
 }
 
-void AFFYAttackAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target)
+void AFFYAttackAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target, int HitIndex)
 {
 	//Make sure to update again in case another action was chosen before
 	EAttackType InAttackType = (ActionOwner->BattleCharacterStats.Equipment.Weapon.bIsEquipable) ? ActionOwner->BattleCharacterStats.Equipment.Weapon.EquipmentData.AttackType : EAttackType::MELEE;

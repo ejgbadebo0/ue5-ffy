@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 
 #include "FFYDefendAction.h"
@@ -13,7 +13,7 @@ AFFYDefendAction::AFFYDefendAction()
 	TargetType = ETargetType::NONE;
 	ActionType = EActionType::STATE;
 	bIsDefaultTargetEnemy = false;
-	bQueuedAction = true;
+	bQueuedAction = false;
 	bIsPassive = false;
 	ATBCost = -1;
 	HPCost = 0;
@@ -24,7 +24,14 @@ AFFYDefendAction::AFFYDefendAction()
 
 void AFFYDefendAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattleCharacter*> Targets)
 {
-	ActionOwner->ActionState = EActionState::DEFENDING;
+	//initial check if can give defense benefits
+	if (CanUse(ActionOwner, 1) && CanExecute(ActionOwner) && (ActionOwner->ActiveState != EActiveState::WAIT))
+	{
+		ActionOwner->ActionState = EActionState::DEFENDING;
+		ActionOwner->OnStartDefendAction_Implementation(ActionOwner->ATB); 
+	}
+	
+	Super::ExecuteAction(ActionOwner, Targets);
 }
 
 void AFFYDefendAction::ExecuteAction(FBattleCharacterData& ActionOwner, TArray<FBattleCharacterData>& Targets)

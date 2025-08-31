@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 
 #include "FFYRaiseAction.h"
@@ -69,7 +69,7 @@ void AFFYRaiseAction::Redirect(AFFYBattleCharacter* ActionOwner, TArray<AFFYBatt
 	Super::Redirect(ActionOwner, Targets);
 }
 
-void AFFYRaiseAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target)
+void AFFYRaiseAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target, int HitIndex)
 {
 	TArray<EStatusEffect> Effects;
 	Effects.Emplace(EStatusEffect::KO);

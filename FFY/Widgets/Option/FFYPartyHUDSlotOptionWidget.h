@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 #pragma once
 
@@ -73,6 +73,9 @@ public:
 	void OnUnselectedProxy();
 	UFUNCTION()
 	void PerformActionProxy();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnFocusedModeChanged(AFFYBattleCharacter* Character, bool bIsFocused);
 	
 	UFUNCTION(BlueprintCallable)
 	void InitializeCharacter(AFFYBattleCharacter* CharacterReference);

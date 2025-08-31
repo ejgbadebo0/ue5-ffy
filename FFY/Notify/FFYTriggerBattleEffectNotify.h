@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 #pragma once
 
@@ -15,6 +15,9 @@ class FFY_API UFFYTriggerBattleEffectNotify : public UAnimNotify
 {
 	GENERATED_BODY()
 
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category="Notify", meta=(AllowPrivateAccess=true))
+	int HitIndex = 0;
+
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
 	                    const FAnimNotifyEventReference& EventReference) override
 	{
@@ -23,7 +26,7 @@ class FFY_API UFFYTriggerBattleEffectNotify : public UAnimNotify
 		IFFYBattleEvents* User = Cast<IFFYBattleEvents>(MeshComp->GetOwner());
 		if (User)
 		{
-			User->TriggerBattleEffect_Implementation(); 
+			User->TriggerBattleEffect_Implementation(HitIndex); 
 		}
 		else
 		{

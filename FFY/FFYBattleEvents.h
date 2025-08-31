@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 #pragma once
 
@@ -65,7 +65,7 @@ public:
 	void BeginSpawnBattleEffect(TSubclassOf<AFFYBattleEffect> BattleEffectClass);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	void TriggerBattleEffect();
+	void TriggerBattleEffect(int HitIndex);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void StartCameraAction(FCameraActionContainer CameraActionContainer);
@@ -84,6 +84,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	FName GetItemName(FName ID);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	bool DistanceCheck(float Distance);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void UpdatePartyMemberStats(FBattleCharacterData CharacterData);

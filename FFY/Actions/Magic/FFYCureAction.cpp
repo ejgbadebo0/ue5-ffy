@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 
 #include "FFYCureAction.h"
@@ -65,7 +65,7 @@ void AFFYCureAction::Redirect(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattl
 	Super::Redirect(ActionOwner, Targets);
 }
 
-void AFFYCureAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target)
+void AFFYCureAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target, int HitIndex)
 {
 	ActionOwner->UpdateDamageAttributes(
 GetCalculatedActionValue(ActionOwner),

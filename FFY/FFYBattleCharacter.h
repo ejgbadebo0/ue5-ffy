@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 #pragma once
 
@@ -35,6 +35,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnActionStateChanged, EActionState,
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnActionSelected, AFFYAction*, Action, bool, bIsContext, float, Duration);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnActionQueued, AFFYAction*, Action, AFFYBattleCharacter*, User, TArray<AFFYBattleCharacter*>, ActionTargets);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWaitActionUsed, AFFYBattleCharacter*, Character);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFocusedStateChanged, AFFYBattleCharacter*, Character, bool, bIsFocused);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCharacterDead, AFFYBattleCharacter*, Character);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnContextCommandActivated, AFFYBattleCharacter*, Character);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnContextCommandDeactivated, AFFYBattleCharacter*, Character);
@@ -59,6 +60,9 @@ struct FFY_API FDamageEventResult
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bWasHit = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsCrit = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIsHealing = false;
@@ -98,6 +102,7 @@ public:
 	FOnActionSelected OnActionSelected;
 	FOnActionQueued OnActionQueued;
 	FOnWaitActionUsed OnWaitActionUsed;
+	FOnFocusedStateChanged OnFocusedStateChanged;
 	FOnContextCommandActivated OnContextCommandActivated;
 	FOnContextCommandDeactivated OnContextCommandDeactivated;
 	FOnCharacterWeakened OnCharacterWeakened;
@@ -200,6 +205,9 @@ public:
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Battle")
 	float DefaultTimeDilation = 1.f;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Battle")
+	AFFYBattleCharacter* DamageSource;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -238,6 +246,8 @@ protected:
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	
+	void OnFreeActionUse();
 
 	//Manager needs to be persistently referenced to ensure assets finish loading before function stack is culled.
 	FStreamableManager StreamableManager;
@@ -308,7 +318,7 @@ public:
 	void StartPerfectDefense()
 	{
 		PerfectDefense = true;
-		GetWorld()->GetTimerManager().SetTimer(PerfectDefenseTimer, this, &AFFYBattleCharacter::EndPerfectDefense, 0.5f, false);
+		GetWorld()->GetTimerManager().SetTimer(PerfectDefenseTimer, this, &AFFYBattleCharacter::EndPerfectDefense, 0.3f, false);
 	}
 
 	//INTERFACE ========================================:
@@ -335,9 +345,29 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnPerfectEvade();
 
+	virtual bool DistanceCheck_Implementation(float Distance) override
+	{
+		if (Targets.Num() > 0)
+		{
+			if ((FVector::Dist2D(GetActorLocation(), Targets[0]->GetActorLocation()) <= Distance))
+			{
+				return true;
+			}
+			else
+			{
+				ActionContainer->LastAction->Redirect(this, Targets);
+				return false;
+			}
+		}
+		else
+		{
+			return true;
+		}
+	}
+
 	//==========================
 	
-	FDamageEventResult InflictDamage(const FDamageAttributes& SourceDamage, int SourceLevel);
+	FDamageEventResult InflictDamage(const FDamageAttributes& SourceDamage, int SourceLevel, float CriticalModifier);
 
 	virtual bool ReceiveDamage_Implementation(AFFYBattleCharacter* Source, AFFYAction* SourceAction) override;
 
@@ -349,6 +379,8 @@ public:
 	}
 
 	virtual void SetVictoryState();
+
+	bool bIsFocused = false;
 
 	bool bVictoryState = false;
 
@@ -405,13 +437,13 @@ public:
 		OnBattleEffectSpawnEffect(BattleEffectClass);
 	}
 
-	virtual void TriggerBattleEffect_Implementation() override
+	virtual void TriggerBattleEffect_Implementation(int HitIndex) override
 	{
 		if (ActionContainer)
 		{
 			if (ActionContainer->LastAction)
 			{
-				ActionContainer->LastAction->Effect(this, Targets[0]);
+				ActionContainer->LastAction->Effect(this, Targets[0], HitIndex);
 			}
 		}
 	}

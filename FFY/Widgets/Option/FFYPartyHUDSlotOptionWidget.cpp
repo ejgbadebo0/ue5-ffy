@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 
 #include "FFYPartyHUDSlotOptionWidget.h"
@@ -135,6 +135,7 @@ void UFFYPartyHUDSlotOptionWidget::PerformActionProxy()
 {
 	PerformAction();
 }
+
 //======================
 
 void UFFYPartyHUDSlotOptionWidget::InitializeCharacter(AFFYBattleCharacter* CharacterReference)
@@ -168,6 +169,7 @@ void UFFYPartyHUDSlotOptionWidget::InitializeCharacter(AFFYBattleCharacter* Char
 		BattleCharacterReference->OnCharacterStatsChanged.AddUniqueDynamic(this, &UFFYPartyHUDSlotOptionWidget::BattleStatsChanged);
 		BattleCharacterReference->OnATBValueChanged.AddUniqueDynamic(this, &UFFYPartyHUDSlotOptionWidget::UpdateATBProgress);
 		BattleCharacterReference->OnActionSelected.AddUniqueDynamic(this, &UFFYPartyHUDSlotOptionWidget::OnActionSelected);
+		BattleCharacterReference->OnFocusedStateChanged.AddUniqueDynamic(this, &UFFYPartyHUDSlotOptionWidget::OnFocusedModeChanged);
 
 
 		if (BattleCharacterReference->SelectionWidget)

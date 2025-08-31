@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 #pragma once
 
@@ -16,10 +16,16 @@ class FFY_API UFFYContextCommandNotifyState : public UAnimNotifyState
 	GENERATED_BODY()
 
 public:
-
+	
+	
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
 	FName ContextCommandName;
+
+	virtual FLinearColor GetEditorColor() override
+	{
+		return FLinearColor(0.30980f, 0.30980f, 0.40392f);
+	}
 	
 	virtual void NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration,
 	                         const FAnimNotifyEventReference& EventReference) override

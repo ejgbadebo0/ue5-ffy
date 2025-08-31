@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Source code implementation by Ephraim Gbadebo.
 
 #pragma once
 
@@ -21,6 +21,9 @@ protected:
 	virtual void NativeConstruct() override;
 
 public:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsReloading = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	AFFYBattleCharacter* CharacterReference;
