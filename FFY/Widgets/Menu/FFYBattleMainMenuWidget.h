@@ -36,7 +36,10 @@ public:
 	
 	virtual FText GetInputKeyText_Implementation() override
 	{
-		return FText::FromString("<img id=\"LeftMouseButton\"></> = Confirm\n \n <img id=\"RightMouseButton\"></> = Cancel\n \n <img id=\"Q\"></>/<img id=\"E\"></> = Cycle Members\n <img id=\"LeftCtrl\"></> = Defend\n \n");
+		return FText::FromString("<img id=\"LeftMouseButton\"></> = Confirm\n \n "
+						   "<img id=\"RightMouseButton\"></> = Cancel\n \n "
+		 "<img id=\"Q\"></>/<img id=\"E\"></> = Cycle Members\n \n "
+   "<img id=\"LeftCtrl\"></> = Defend\n \n");
 	}
 
 	virtual UFFYSelectPartyMemberWidget* GetSelectionWidget_Implementation() override;
