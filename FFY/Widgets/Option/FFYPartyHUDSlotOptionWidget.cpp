@@ -71,7 +71,7 @@ void UFFYPartyHUDSlotOptionWidget::BattleStatsChanged(FBattleCharacterData& NewD
 {
 	HPValue->SetText(FText::AsNumber(NewData.HP));
 	MaxHPValue->SetText(FText::AsNumber(NewData.MaxHP));
-\
+
 	if ((NewData.HP/NewData.MaxHP) < 0.25f)
 	{
 		FText HPText = FText::AsNumber(NewData.HP);
@@ -145,17 +145,32 @@ void UFFYPartyHUDSlotOptionWidget::InitializeCharacter(AFFYBattleCharacter* Char
 
 	if (BattleCharacterReference)
 	{
-		if (BattleCharacterReference->PortraitImage)
+		if (BattleCharacterReference->BattleCharacterStats.Portrait)
 		{
 			UMaterialInstanceDynamic* MaterialInstance = Portrait->GetDynamicMaterial();
 			if (MaterialInstance)
 			{
-				MaterialInstance->SetTextureParameterValue("InTexture", BattleCharacterReference->PortraitImage);
+				MaterialInstance->SetTextureParameterValue("InTexture", BattleCharacterReference->BattleCharacterStats.Portrait);
+				MaterialInstance->SetScalarParameterValue("Offset", BattleCharacterReference->PortraitOffset);
 			}
 		}
 	
 		CharacterName->SetText(FText::FromName(BattleCharacterReference->BattleCharacterStats.CharacterName));
-		HPValue->SetText(FText::AsNumber(BattleCharacterReference->BattleCharacterStats.HP));
+		FText HPText = FText::AsNumber(BattleCharacterReference->BattleCharacterStats.HP);
+		if ((BattleCharacterReference->BattleCharacterStats.HP/BattleCharacterReference->BattleCharacterStats.MaxHP) < 0.25f)
+		{
+			FText Status = (BattleCharacterReference->BattleCharacterStats.HP <= 0.f) ? FText::FromString("<KO>") : FText::FromString("<Weak>");
+			FTextFormat FMT = FTextFormat::FromString("{SFMT}{Value}</>");
+			FFormatNamedArguments Args;
+			Args.Add("SFMT", Status);
+			Args.Add("Value", HPText);
+			HPText = FText::Format(FMT, Args);
+			HPValue->SetText(HPText);
+		}
+		else
+		{
+			HPValue->SetText(HPText);
+		}
 		MaxHPValue->SetText(FText::AsNumber(BattleCharacterReference->BattleCharacterStats.MaxHP));
 		MPValue->SetText(FText::AsNumber(BattleCharacterReference->BattleCharacterStats.MP));
 		MaxMPValue->SetText(FText::AsNumber(BattleCharacterReference->BattleCharacterStats.MaxMP));
@@ -181,6 +196,10 @@ void UFFYPartyHUDSlotOptionWidget::InitializeCharacter(AFFYBattleCharacter* Char
 			BattleCharacterReference->SelectionWidget->OnBattleCharacterSelected.AddUniqueDynamic(this, &UFFYPartyHUDSlotOptionWidget::OnSelectedProxy);
 			BattleCharacterReference->SelectionWidget->OnBattleCharacterUnselected.AddUniqueDynamic(this, &UFFYPartyHUDSlotOptionWidget::OnUnselectedProxy);
 			BattleCharacterReference->SelectionWidget->OnBattleCharacterConfirmed.AddUniqueDynamic(this, &UFFYPartyHUDSlotOptionWidget::PerformActionProxy);
+		}
+		else
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 55.f, FColor::Red, "=============== BC BUTTON INVALID =================");
 		}
 	}
 }

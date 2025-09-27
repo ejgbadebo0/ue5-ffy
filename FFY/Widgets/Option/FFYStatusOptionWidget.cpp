@@ -28,6 +28,7 @@ void UFFYStatusOptionWidget::OnUnselected()
 
 void UFFYStatusOptionWidget::PerformAction()
 {
+	
 	if ( bIsDisabled || OwnerMenu->GetCurrentMenuMode() != EMenuMode::NONE )
 	{
 		return;
@@ -38,6 +39,7 @@ void UFFYStatusOptionWidget::PerformAction()
 
 void UFFYStatusOptionWidget::ContextAction_Implementation(UFFYPartyMemberOptionWidget* CharacterWidget, bool SelectAll)
 {
+	OwnerMenu->PlayMenuSound_Implementation(1);
 	OwnerMenu->NavigateToMenu(FName("Status"), CharacterWidget->GetCharacterName());
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, TEXT("STATUS BUTTON PRESSED"));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, TEXT("STATUS BUTTON PRESSED"));
 }

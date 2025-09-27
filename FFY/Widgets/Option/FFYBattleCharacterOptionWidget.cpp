@@ -34,9 +34,9 @@ void UFFYBattleCharacterOptionWidget::OnReset()
 void UFFYBattleCharacterOptionWidget::OnDestroy()
 {
 	GEngine->AddOnScreenDebugMessage(-1, 50.f, (Enemy) ? FColor::Magenta : FColor::Cyan, "BC BUTTON DESTROYED");
-	SetIsDisabled(true);
-	SetVisibility(ESlateVisibility::Collapsed);
-	SetRenderOpacity(0.f);
+	this->SetIsDisabled(true);
+	this->SetVisibility(ESlateVisibility::Collapsed);
+	this->SetRenderOpacity(0.f);
 	//this->RemoveFromParent();
 }
 
@@ -49,7 +49,7 @@ void UFFYBattleCharacterOptionWidget::InitializeFromWidget(UFFYPartyHUDSlotOptio
 	auto InMenu = Cast<UFFYSelectBattleCharacterWidget>(InWidget->GetOwnerMenu());
 	if (InMenu)
 	{
-		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, "BCMenu Linked");
+		GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Cyan, "BCMenu Linked =================");
 		InMenu->OnOptionGroupDisabled.AddUniqueDynamic(this, &UFFYBattleCharacterOptionWidget::ShouldDisable);
 		InMenu->OnResetAll.AddUniqueDynamic(this, &UFFYBattleCharacterOptionWidget::OnReset);
 	}
@@ -84,9 +84,11 @@ void UFFYBattleCharacterOptionWidget::PerformAction()
 {
 	if ( bIsDisabled )
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Black, "BCO is DISABLED......");
 		return;
 	}
 	OnBattleCharacterConfirmed.Broadcast();
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, "BCO is PRESSED......");
 }
 
 

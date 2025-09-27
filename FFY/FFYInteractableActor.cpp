@@ -40,6 +40,17 @@ void AFFYInteractableActor::BeginPlay()
 
 	InteractCollision->OnComponentBeginOverlap.AddDynamic(this, &AFFYInteractableActor::OnOverlapBegin);
 	InteractCollision->OnComponentEndOverlap.AddDynamic(this, &AFFYInteractableActor::OnOverlapEnd);
+
+	IFFYSaveDataEvents* GameInstance = Cast<IFFYSaveDataEvents>(GetGameInstance());
+	if (GameInstance)
+	{
+		bool Result = GameInstance->HasSaveData_Implementation(ActorID);
+		if (Result)
+		{
+			uint8 State = GameInstance->GetSaveState_Implementation(ActorID);
+			LoadSaveState(State);
+		}
+	}
 }
 
 //INTERFACE:

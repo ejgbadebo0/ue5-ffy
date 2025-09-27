@@ -34,6 +34,7 @@ void UFFYGameInstance::Init()
 		NewData.BattleCharacterClass = i->BattleCharacterClass;
 		NewData.EquipmentClass = i->EquipmentClass;
 		NewData.CharacterName = i->CharacterName;
+		NewData.Portrait = i->Portrait;
 		NewData.LV = i->LV;
 		NewData.AP = i->AP;
 		NewData.MaxHP = i->MaxHP;
@@ -243,11 +244,19 @@ void UFFYGameInstance::AddToInventory(FItemData InventoryItem, int32 Amount)
 		{
 			return;
 		}
-		//didn't find item in Inventory, so construct a new item
-		GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Blue, TEXT("Item constructed, adding"));
-		int AddAmount = (InventoryItem.Amount > 0) ? Amount : 1; //make sure to initialize Amount to at least 1
-		InventoryItem.Amount = AddAmount;
-		Inventory.Emplace(InventoryItem);
+		if (InventoryItem.ID == FName("GIL")) //is item an amount of Gil
+		{
+			Gil += Amount;
+		}
+		else
+		{
+			//didn't find item in Inventory, so construct a new item
+			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Blue, TEXT("Item constructed, adding"));
+			int AddAmount = (InventoryItem.Amount > 0) ? Amount : 1; //make sure to initialize Amount to at least 1
+			InventoryItem.Amount = AddAmount;
+			Inventory.Emplace(InventoryItem);
+		}
+
 	}
 	//PrintInventory();
 	OnInventoryUpdated.Broadcast();

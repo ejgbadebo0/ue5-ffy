@@ -12,6 +12,7 @@
 #include "Components/FFYStatusEffectComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Notify/FFYElementalNiagaraEffectState.h"
+#include "Slate/SGameLayerManager.h"
 #include "Widgets/Option/FFYBattleCharacterOptionWidget.h"
 
 // Sets default values
@@ -148,6 +149,20 @@ void AFFYBattleCharacter::BeginPlay()
 		
 		SelectionWidget->Enemy = ActorHasTag(FName("Enemy"));
 	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 55.f, FColor::Red, "=============== BC BUTTON INVALID =================");
+	}
+
+	//Flying enemies setup
+	if (GetCharacterMovement())
+	{
+		if (GetCharacterMovement()->MovementMode == MOVE_Flying)
+		{
+			DefaultTransform.SetLocation( FVector(DefaultTransform.GetLocation().X, DefaultTransform.GetLocation().Y, DefaultTransform.GetLocation().Z + FlightHeight));
+			SetActorLocation(DefaultTransform.GetLocation());
+		}
+	}
 	
 	
 }
@@ -168,6 +183,14 @@ void AFFYBattleCharacter::InitializeFromPartySlot()
 			ACIndex++;
 		}
 		//GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::White, "BATTLE CHARACTER INITIALIZED");
+	}
+	//Initialize status effects
+	if (StatusEffectComponent)
+	{
+		for (auto s : BattleCharacterStats.StatusEffects)
+		{
+			StatusEffectComponent->AddEffect(s);
+		}
 	}
 }
 
@@ -314,7 +337,8 @@ void AFFYBattleCharacter::UpdateATB(float DeltaTimeX)
 }
 
 void AFFYBattleCharacter::UpdateDamageAttributes(float DamageAmount, EStat DamageStat, EDamageModifier DamageModifier,
-                                                 EElement DamageElement, TArray<EStatusEffect> Inflicts, TArray<EStatusEffect> Removes, EAttackType AttackType)
+                                                 EElement DamageElement, TArray<EStatusEffect> Inflicts, TArray<EStatusEffect> Removes, float InnateModifier,
+                                                 EAttackType AttackType)
 {
 	DamageAttributes.DamageAmount = DamageAmount;
 	DamageAttributes.DamageStat = DamageStat;
@@ -322,6 +346,7 @@ void AFFYBattleCharacter::UpdateDamageAttributes(float DamageAmount, EStat Damag
 	DamageAttributes.DamageElement = DamageElement;
 	DamageAttributes.Inflicts = Inflicts;
 	DamageAttributes.Removes = Removes;
+	DamageAttributes.InnateModifier = InnateModifier;
 	DamageAttributes.AttackType = AttackType;
 }
 
@@ -330,6 +355,54 @@ void AFFYBattleCharacter::UpdateMotionWarpTransform(FName WarpName, FVector Warp
 	if (MotionWarpingComponent)
 	{
 		MotionWarpingComponent->AddOrUpdateWarpTargetFromLocationAndRotation(WarpName, WarpLocation, WarpRotation);
+	}
+}
+
+FTransform AFFYBattleCharacter::GetWarpTargetTransform(FName WarpName) const
+{
+	FTransform WarpTransform = FTransform::Identity;
+	if (MotionWarpingComponent)
+	{
+		const FMotionWarpingTarget* WarpingTarget = MotionWarpingComponent->FindWarpTarget(WarpName);
+		if (WarpingTarget)
+		{
+			WarpTransform = WarpingTarget->GetTargetTrasform();
+		}
+	}
+	return WarpTransform;
+}
+
+void AFFYBattleCharacter::OnParry()
+{
+	//refund 50 ATB to allow another Defend
+	ATB = FMath::Min(ATB + 50.f, 100.f);
+	UpdateATB(0.001f);
+
+	//update chain
+	IFFYBattleEvents* Manager = Cast<IFFYBattleEvents>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
+	if (Manager)
+	{
+		int Chain = Manager->GetChain_Implementation() + 1;
+		Manager->UpdateChain_Implementation(Chain, 1.f);
+	}
+}
+
+void AFFYBattleCharacter::PruneStatusEffects()
+{
+	if (BattleCharacterStats.StatusEffects.IsEmpty())
+	{
+		return;
+	}
+	for (auto s : BattleCharacterStats.StatusEffects)
+	{
+		if (s != EStatusEffect::KO)
+		{
+			if (StatusEffectComponent)
+			{
+				StatusEffectComponent->RemoveEffect(s);
+			}
+			BattleCharacterStats.StatusEffects.RemoveSingle(s);
+		}
 	}
 }
 
@@ -347,28 +420,41 @@ FDamageEventResult AFFYBattleCharacter::InflictDamage(const FDamageAttributes& S
 	{
 	default:
 		break;
-	case EDamageModifier::NONE:
+	case EDamageModifier::NONE: //damage from source other than an attack
+		CriticalModifier = 0.f;
 		break;
 	case EDamageModifier::MAGIC:
 		DefenseStat = BattleCharacterStats.Spirit;
 		break;
 	case EDamageModifier::PHYSICAL:
 		DefenseStat = BattleCharacterStats.Constitution;
+		if (SourceDamage.AttackType == EAttackType::MELEE && bCanClash) //if phys/melee attack hits while in clashing state from animation
+		{
+			bHasClashed = true;
+			OnClashEvent(); 
+			return FDamageEventResult(true,
+			false,
+			false,
+			PerfectDefense,
+			-1,
+			ResultText,
+			SourceDamage);
+		}
 		break;
 	}
 
 	//modifier for base defense stats
 	float StatModifier = DefenseStat/2;
-
-
+	
 	//modifiers for critical hit chance
-	bool bIsCrit = (CriticalModifier > FMath::RandRange(0.f, 1.f));
+	float CrtNum = FMath::RandRange(0.f, 1.f);
+	bool bIsCrit = (CriticalModifier > CrtNum);
 	float CritDmgModifier = ((bIsCrit)) ? 1.5f : 1.f; //50% increase to final damage if critical
 	
-	//GEngine->AddOnScreenDebugMessage(-1, 35.f, FColor::Red, FString::Printf(TEXT("Initial DefStatModifier: %f"), StatModifier ));
+	GEngine->AddOnScreenDebugMessage(-1, 35.f, (bIsCrit) ? FColor::Yellow : FColor::White, FString::Printf(TEXT("CRIT ===:%f > %f"), CriticalModifier, CrtNum ));
 	
 	//multiplied to decrease the final damage amount based on defense variables
-	float DefendModifier = (this->ActionState == EActionState::DEFENDING)
+	float DefendModifier = (this->ActionState == EActionState::DEFENDING && SourceDamage.DamageModifier != EDamageModifier::NONE)
 				? 0.75f * //if defending decrease damage taken by 25% at base
 					((PerfectDefense) ? ((ShieldMesh->IsVisible()) ? 0.0f : 0.1f) : (1 - DefenseFactor)) //if a perfect timed defense, decrease to ~7% and 0 if equipped with a shield, else use the DefenseFactor derived from ATB consumed when beginning defend.
 				: 1.f; //take full damage if not defending
@@ -390,6 +476,7 @@ FDamageEventResult AFFYBattleCharacter::InflictDamage(const FDamageAttributes& S
 	
 	if (BattleCharacterStats.HP <= 0)
 	{
+		PruneStatusEffects();
 		BattleCharacterStats.StatusEffects.Emplace(EStatusEffect::KO);
 		
 		FTextFormat FMT = FTextFormat::FromString("{Previous}<Fatal>KO</>\n");
@@ -403,12 +490,17 @@ FDamageEventResult AFFYBattleCharacter::InflictDamage(const FDamageAttributes& S
 		{
 			Instance->PlayActionMontage_Implementation(FName("KO"), false);
 		}
+		
 		if (StatusEffectComponent)
 		{
 			StatusEffectComponent->AddEffect(EStatusEffect::KO);
 			StatusEffectComponent->OnKOEffectFinished.AddUniqueDynamic(this, &AFFYBattleCharacter::K2_DestroyActor);
 		}
 		OnCharacterDefeated.Broadcast(this);
+		if (ActorHasTag(FName("Enemy")))
+		{
+			EnemyKOEvent();
+		}
 	}
 	else 
 	{
@@ -421,18 +513,20 @@ FDamageEventResult AFFYBattleCharacter::InflictDamage(const FDamageAttributes& S
 		default:
 			break;
 		case EActionState::DEFENDING:
-			if (Instance)
+			if (Instance && !(SourceDamage.DamageElement == EElement::STATUS && SourceDamage.DamageModifier == EDamageModifier::MAGIC) && (SourceDamage.DamageModifier != EDamageModifier::NONE)) //don't allow parrying on pure status inflicting moves
 			{
 				Instance->PlayActionMontage_Implementation((PerfectDefense) ? FName("Parry") : FName("Block"), false);
-				if (PerfectDefense) //on parry, refund 50 ATB
+				if (PerfectDefense)
 				{
-					ATB = FMath::Min(ATB + 50.f, 100.f);
-					UpdateATB(0.0f);
+					OnParry();
 				}
 			}
 			break;
 		case EActionState::IDLE:
-			if (Instance && FVector::Distance(GetActorLocation(), DefaultTransform.GetLocation()) <= 20.f && FinalDamage > 0.f) //prevent repositioning to be overriden by anim
+			if (Instance
+				&& FVector::Distance(GetActorLocation(), DefaultTransform.GetLocation()) <= 20.f //prevent repositioning to be overriden by anim
+				&& !(AnimInstance->IsAnyMontagePlaying()) //prevent cancelling ongoing action
+				&& FinalDamage > 0.f) //don't play if no damage was received
 			{
 				Instance->PlayActionMontage_Implementation(FName("Damage"), false);
 			}
@@ -479,10 +573,10 @@ FDamageEventResult AFFYBattleCharacter::InflictDamage(const FDamageAttributes& S
 					float LuckModifier = BattleCharacterStats.Luck/100.f;
 
 					float ResistChance = ResistModifier + LuckModifier;
-					float InflictChance = FMath::RandRange(0.f, 1.f);
+					float InflictChance = (PerfectDefense) ? SourceDamage.InnateModifier : FMath::RandRange(0.f, 1.f) +  SourceDamage.InnateModifier;
 
 					//add inflicted status ailment
-					if (InflictChance > ResistChance)
+					if (InflictChance > ResistChance && !(BattleCharacterStats.StatusEffects.Contains(s)))
 					{
 						BattleCharacterStats.StatusEffects.Add(s);
 
@@ -543,6 +637,11 @@ bool AFFYBattleCharacter::ReceiveDamage_Implementation(
 {
 	//determine if valid
 	if (!Source)
+	{
+		return false;
+	}
+	//determine if has clashed with a character
+	if (Source->bHasClashed)
 	{
 		return false;
 	}
@@ -699,6 +798,7 @@ bool AFFYBattleCharacter::ReceiveHealing_Implementation(AFFYBattleCharacter* Sou
 			{
 				BattleCharacterStats.StatusEffects.Remove(s);
 				StatusRemovedEvent(s);
+				
 				if (StatusEffectComponent)
 				{
 					StatusEffectComponent->RemoveEffect(s);

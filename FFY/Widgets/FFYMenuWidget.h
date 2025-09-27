@@ -18,12 +18,14 @@ class UFFYMasterWidget;
 class UImage;
 class UWrapBox;
 class UCanvasPanel;
+
+
+
+
+
 /**
  * 
  */
-
-
-
 UCLASS()
 class FFY_API UFFYMenuWidget : public UUserWidget, public IFFYWidgetEvents
 {
@@ -72,6 +74,22 @@ protected:
 	EMenuMode CurrentMenuMode;
 
 public:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Audio)
+	USoundWave* SelectedSoundWave;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Audio)
+	USoundWave* ConfirmedSoundWave;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Audio)
+	USoundWave* ErrorSoundWave;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Audio)
+	USoundWave* PartyMemberSelectSoundWave;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Audio)
+	USoundWave* CustomSoundWave;
+	
 	UFUNCTION(BlueprintCallable)
 	virtual void Refresh();
 
@@ -104,6 +122,7 @@ public:
 			GuidedSelect = false;
 		}
 		CurrentOption = Option;
+		PlayMenuSound_Implementation(0);
 		if (DescriptionTextBlock)
 		{
 			DescriptionTextBlock->SetText(CurrentOption->GetDescription());
@@ -125,6 +144,12 @@ public:
 	void ExecuteContextAction(UFFYPartyMemberOptionWidget* CharacterWidget, bool SelectAll);
 	
 	//INTERFACE:
+
+	virtual void ViewportResized_Implementation(int ViewportX, int ViewportY) override
+	{
+		OnViewportResized(ViewportX, ViewportY);
+	}
+
 	virtual void ResetOptions_Implementation() override;
 	
 	virtual void PartyMemberSelect_Implementation(UFFYPartyMemberOptionWidget* CharacterWidget) override;
@@ -134,6 +159,8 @@ public:
 	virtual void EndSelection_Implementation() override;
 	
 	virtual void StartSelection_Implementation(UFFYOptionWidget* SelectedOption, ETargetType SelectedTargetType) override;
+
+	virtual void PlayMenuSound_Implementation(uint8 SoundIndex) override;
 
 	// ----- INPUTS:
 	virtual void SelectAllInputEvent_Implementation() override;
@@ -150,7 +177,10 @@ public:
 
 	//virtual void LoadContext_Implementation(FName ContextName) override;
 
-	//virtual void ContextAction_Implementation(UFFYPartyMemberOptionWidget* CharacterWidget) override;
+	//BP EVENTS:
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnViewportResized(int ViewportX, int ViewportY);
 };
 
 /*

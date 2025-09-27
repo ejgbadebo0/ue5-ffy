@@ -46,6 +46,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
 	FName DefaultSocketName;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect", meta = (ExposeOnSpawn = true))
+	bool bUseSocket;
+
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void StartEffect();
 

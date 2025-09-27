@@ -91,7 +91,12 @@ void UFFYBattleWidget::LoadBattleContext_Implementation(AFFYBattleCharacter* Cha
 	if (Character)
 	{
 		SetBattleContext_Implementation(Character);
-	
+		//audio:
+		if (SwitchContextSoundWave)
+		{
+			PlaySound(SwitchContextSoundWave);
+		}
+		
 		if (WidgetSwitcher)
 		{
 			for (auto i : WidgetSwitcher->GetAllChildren())

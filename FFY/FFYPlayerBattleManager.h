@@ -11,19 +11,24 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "FFYBattleCharacter.h"
+#include "FFYCameraControls.h"
+#include "Widgets/FFYBattleWidget.h"
+#include "Widgets/FFYChainWidget.h"
 //---
 #include "FFYPlayerBattleManager.generated.h"
 
 
 class UFFYBattleResultsWidget;
+class UFFYChainWidget;
 class UFFYActionWidget;
 class UFFYBattleWidget;
 class UFFYMenuWidget;
 class UFFYMasterWidget;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSceneDarken, bool, Active);
 
 UCLASS()
-class FFY_API AFFYPlayerBattleManager : public APawn, public IFFYBattleEvents
+class FFY_API AFFYPlayerBattleManager : public APawn, public IFFYBattleEvents, public IFFYCameraControls
 {
 	GENERATED_BODY()
 
@@ -31,15 +36,25 @@ class FFY_API AFFYPlayerBattleManager : public APawn, public IFFYBattleEvents
 	float PartyEXPGained;
 
 	UPROPERTY(VisibleAnywhere)
+	float ChainBonus;
+
+	UPROPERTY(VisibleAnywhere)
+	TMap<FName, int> ItemDrops;
+
+	UPROPERTY(VisibleAnywhere)
 	FTimerHandle VictoryTimer;
 
 	UPROPERTY(VisibleAnywhere)
 	int CurrentCameraPriority = 0;
 
+
 public:
 	// Sets default values for this pawn's properties
 	AFFYPlayerBattleManager();
 
+	//DELEGATE:
+	UPROPERTY(BlueprintAssignable)
+	FOnSceneDarken OnSceneDarken;
 
 	//WIDGETS:
 
@@ -50,6 +65,9 @@ public:
 	TSubclassOf<UFFYActionWidget> ActionWidgetClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UI, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UFFYChainWidget> ChainWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UI, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UFFYBattleResultsWidget> BattleResultsWidgetClass;
 		
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = UI, meta = (AllowPrivateAccess = "true"))
@@ -57,6 +75,9 @@ public:
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = UI, meta = (AllowPrivateAccess = "true"))
 	UFFYActionWidget* ActionWidget;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = UI, meta = (AllowPrivateAccess = "true"))
+	UFFYChainWidget* ChainWidget;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = UI, meta = (AllowPrivateAccess = "true"))
 	UFFYBattleResultsWidget* BattleResultsWidget;
@@ -140,6 +161,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Battle", meta = (AllowPrivateAccess = "true"))
 	FTransform DefaultTransform;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Battle", meta = (AllowPrivateAccess = "true"))
+	TArray<FTransform> BattleCameraTransforms;
+
 protected:
 	
 	UFUNCTION()
@@ -148,6 +172,9 @@ protected:
 	//called when enemy dies
 	UFUNCTION()
 	void CheckWinCondition(AFFYBattleCharacter* Character);
+
+	UFUNCTION()
+	void StartVictory();
 
 	UFUNCTION()
 	void Victory();
@@ -181,8 +208,12 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void OnCameraActionFinished()
 	{
-		CurrentCameraPriority = 0; 
+		CurrentCameraPriority = 0;
+		bCameraActionOverride = false;
 	}
+
+	UFUNCTION(BlueprintCallable)
+	void ChangeDefaultTransform();
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -209,6 +240,21 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Data", meta = (AllowPrivateAccess = "true"))
 	FDataTableRowHandle LevelUpDataTableHandle;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	bool bCameraActionOverride = false;
+
+	bool ChainActive = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Battle", meta = (AllowPrivateAccess = "true"))
+	int CurrentChain = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Battle", meta = (AllowPrivateAccess = "true"))
+	float FallOffValue = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Battle", meta = (AllowPrivateAccess = "true"))
+	float CurrentChainFallOffRate = 1.f;
+
 	
 	UFUNCTION()
 	virtual void OnStartBattle()
@@ -223,33 +269,106 @@ public:
 				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Purple, FString::Printf(TEXT("%s: INITIATIVE = %f"), *p->BattleCharacterStats.CharacterName.ToString(), 100*(p->BattleCharacterStats.Dexterity/HighestDex) - (20-p->Initiative)));
 			}
 		}
+		
+		int StartingValues = 1;
+		int HighestValues = 0;
+		float AnchorATB = 0;
+		
 		for (auto e : Enemies)
 		{
-			int StartingValues = 0;
 			if (e)
 			{
-				if (StartingValues > 0) //manual offset
+				AnchorATB = FMath::Clamp(100*(e->BattleCharacterStats.Dexterity/HighestDex) + (10-e->Initiative * StartingValues), 0, 99);
+				StartingValues++;
+				if (e->BattleCharacterStats.Dexterity == HighestDex)
 				{
-					float Sign = (FMath::RandBool()) ? 1.f : -1.f; 
-					e->ATB = FMath::Clamp(100*(e->BattleCharacterStats.Dexterity/HighestDex) - (20-e->Initiative) + (20 * StartingValues * Sign) , 0, 99);
-					StartingValues++;
+					HighestValues++;
+					if (HighestValues > 1)
+					{
+						AnchorATB = FMath::Clamp(AnchorATB - (15 * (HighestValues-1)), 0, 99);
+					}
 				}
-				else
-				{
-					e->ATB = FMath::Clamp(100*(e->BattleCharacterStats.Dexterity/HighestDex) - (20-e->Initiative), 0, 99);
-					StartingValues++;
-				}
-				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString::Printf(TEXT("%s: INITIATIVE = %f"), *e->BattleCharacterStats.CharacterName.ToString(), 100*(e->BattleCharacterStats.Dexterity/HighestDex) - (20-e->Initiative)));
+				e->ATB = AnchorATB;
+				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString::Printf(TEXT("%s: INITIATIVE = %f"), *e->BattleCharacterStats.CharacterName.ToString(), AnchorATB));
 			}
 		}
 		
 		//Enable Battle actions
 		bHasBattleStarted = true;
+		if (BattleWidget)
+		{
+			BattleWidget->BattleStart();
+		}
 	}
 
 	//INTERFACE:
 
 	virtual void ActionUsed_Implementation(FName ActionName, bool bIsEnemy) override;
+
+	virtual void AddFallOff_Implementation(float FallOff) override
+	{
+		FallOffValue += FallOff;
+		
+		if (ChainWidget)
+		{
+			ChainWidget->AddFallOff_Implementation(FallOff);
+		}
+		
+	}
+
+	virtual int GetChain_Implementation() override
+	{
+		return CurrentChain;
+	}
+
+	virtual void ResetChain_Implementation() override
+	{
+		ChainActive = false;
+		CurrentChain = 0;
+		
+		if (ChainWidget)
+		{
+			ChainWidget->ResetChain_Implementation();
+		}
+	}
+
+	virtual void UpdateChain_Implementation(int Amount, float FallOffRate) override
+	{
+		ChainActive = true;
+		CurrentChain = Amount;
+		FallOffValue = 100.f;
+		CurrentChainFallOffRate = FallOffRate;
+		
+		if (ChainWidget)
+		{
+			ChainWidget->UpdateChain_Implementation(Amount, FallOffRate);
+		}
+	}
+
+	//deltatime for actor, final value in widget
+	virtual void UpdateFallOff_Implementation(float Value) override
+	{
+		if (!ChainActive)
+		{
+			return;
+		}
+		FallOffValue -= FMath::Clamp((3.f * Value * CurrentChainFallOffRate), 0.f, 100.f);
+		GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::White, FString::Printf(TEXT("Chain: %i, FO: %f"), CurrentChain, FallOffValue));
+		if (ChainWidget)
+		{
+			ChainWidget->UpdateFallOff_Implementation((FallOffValue/100.f));
+			if (FallOffValue <= 0.f)
+			{
+				ResetChain_Implementation();
+			}
+		}
+	}
+
+	virtual void DarkenScene_Implementation(bool Active) override
+	{
+		OnDarkenScene(Active);  //post process effects
+		OnSceneDarken.Broadcast(Active); //signal to listening actors for custom behavior
+	}
 
 	//===========
 
@@ -263,6 +382,12 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnFocusStateChanged(AFFYBattleCharacter* Character, bool bIsFocused);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnClashEvent(AFFYBattleCharacter* Character);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnDarkenScene(bool Active);
 
 	//===========
 };

@@ -139,10 +139,10 @@ void UFFYEquipmentMenuWidget::LoadContext_Implementation(FName ContextName)
 		}
 		if (Result) //Has a valid slot, Load widget info
 		{
-			UTexture2D** Image = PortraitTextureCache.Find(PartySlot.PartyCharacterData.CharacterName);
+			UTexture2D* Image = PartySlot.PartyCharacterData.Portrait;
 			if (Image)
 			{
-				Portrait->SetBrushFromTexture(*Image);
+				Portrait->SetBrushFromTexture(Image);
 			}
 	
 			CharacterName->SetText(FText::FromName(PartySlot.PartyCharacterData.CharacterName));
@@ -184,6 +184,7 @@ void UFFYEquipmentMenuWidget::LoadContext_Implementation(FName ContextName)
 void UFFYEquipmentMenuWidget::EquipmentItemHovered_Implementation(UFFYEquipmentItemOptionWidget* SelectedItemWidget)
 {
 	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, "EquipmentItemHovered_Implementation" );
+	PlayMenuSound_Implementation(0);
 	DescriptionTextBlock->SetText(SelectedItemWidget->GetDescription());
 	
 	UFFYGameInstance* GameInstance = Cast<UFFYGameInstance>(GetWorld()->GetGameInstance());
@@ -277,11 +278,13 @@ void UFFYEquipmentMenuWidget::EquipmentItemSelected_Implementation(UFFYEquipment
 		if (SelectedItemWidget->InventoryItem.ItemName == FName("(Unequip)"))
 		{
 			GameInstance->ItemManager->Unequip(SelectedItemWidget->InventoryItem.EquipmentData.EquipmentSlot, GameInstance->GetParty()[ContextIndex].PartyCharacterData);
+			PlayMenuSound_Implementation(4);
 		}
 		else
 		{
 			int Index = GameInstance->FindInventoryItemIndex(SelectedItemWidget->InventoryItem.ID);
 			GameInstance->ItemManager->Equip(GameInstance->Inventory[Index], GameInstance->GetParty()[ContextIndex].PartyCharacterData);
+			PlayMenuSound_Implementation(3);
 		}
 	}
 	EndSelection_Implementation();

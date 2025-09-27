@@ -24,6 +24,9 @@ public:
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category="Notify", meta=(AllowPrivateAccess=true))
 	TSubclassOf<AFFYBattleEffect> SpawnBattleEffectClass;
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category="Notify", meta=(AllowPrivateAccess=true))
+	bool bUseSocket;
 	
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
 		const FAnimNotifyEventReference& EventReference) override;
@@ -42,7 +45,7 @@ inline void UFFYSpawnBattleEffectNotify::Notify(USkeletalMeshComponent* MeshComp
 	IFFYBattleEvents* User = Cast<IFFYBattleEvents>(MeshComp->GetOwner());
 	if (User)
 	{
-		User->BeginSpawnBattleEffect_Implementation(SpawnBattleEffectClass);
+		User->BeginSpawnBattleEffect_Implementation(SpawnBattleEffectClass, bUseSocket);
 	}
 	else
 	{

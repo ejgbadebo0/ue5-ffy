@@ -35,6 +35,7 @@ void AFFYCureAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFFY
 		EElement::HEALING,
 	TArray<EStatusEffect>(),
 	TArray<EStatusEffect>(),
+		0.0f,
 		EAttackType::RANGED);
 
 	Super::ExecuteAction(ActionOwner, Targets);
@@ -74,6 +75,7 @@ GetCalculatedActionValue(ActionOwner),
 	EElement::HEALING,
 TArray<EStatusEffect>(),
 TArray<EStatusEffect>(),
+	0.0f,
 	EAttackType::RANGED);
 
 	Target->ReceiveHealing_Implementation(ActionOwner, this);

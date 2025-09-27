@@ -30,15 +30,29 @@ void UFFYPartyMemberOptionWidget::NativeTick(const FGeometry& MyGeometry, float 
 void UFFYPartyMemberOptionWidget::InitializeOption(FPartySlot& PartySlot)
 {
 	
-	UTexture2D** Image = PortraitTextureCache.Find(PartySlot.PartyCharacterData.CharacterName);
+	UTexture2D* Image = PartySlot.PartyCharacterData.Portrait;
 	if (Image)
 	{
-		Portrait->SetBrushFromTexture(*Image);
+		Portrait->SetBrushFromTexture(Image);
 	}
 	
 	CharacterName->SetText(FText::FromName(PartySlot.PartyCharacterData.CharacterName));
 	LevelValue->SetText(FText::AsNumber(PartySlot.PartyCharacterData.LV));
-	HPValue->SetText(FText::AsNumber(PartySlot.PartyCharacterData.HP));
+	FText HPText = FText::AsNumber(PartySlot.PartyCharacterData.HP);
+	if ((PartySlot.PartyCharacterData.HP/PartySlot.PartyCharacterData.MaxHP) < 0.25f)
+	{
+		FText Status = (PartySlot.PartyCharacterData.HP <= 0.f) ? FText::FromString("<KO>") : FText::FromString("<Weak>");
+		FTextFormat FMT = FTextFormat::FromString("{SFMT}{Value}</>");
+		FFormatNamedArguments Args;
+		Args.Add("SFMT", Status);
+		Args.Add("Value", HPText);
+		HPText = FText::Format(FMT, Args);
+		HPValue->SetText(HPText);
+	}
+	else
+	{
+		HPValue->SetText(HPText);
+	}
 	MaxHPValue->SetText(FText::AsNumber(PartySlot.PartyCharacterData.MaxHP));
 	MPValue->SetText(FText::AsNumber(PartySlot.PartyCharacterData.MP));
 	MaxMPValue->SetText(FText::AsNumber(PartySlot.PartyCharacterData.MaxMP));

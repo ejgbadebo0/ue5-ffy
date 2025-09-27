@@ -26,6 +26,10 @@ struct FFY_API FGambit
 {
 	GENERATED_BODY()
 
+	//name of action
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName ActionName = FName("None");
+
 	//in case where this gambit is selected, whether to evaluate again or pass to next in list
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool EvaluateOnce = false;
@@ -50,7 +54,7 @@ struct FFY_API FGambit
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	uint8 NumEnemies = 0;
 
-	//if non-zero positive number, number of actors currently tagged as "Party" will return true
+	//if non-zero positive number, number of actors currently tagged as "Party" and aren't dead will return true
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	uint8 NumAllies = 0;
 
@@ -119,7 +123,7 @@ public:
 	
 	//list of gambits that controlled member will evaluate
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Default", meta=(AllowPrivateAccess=true))
-	TMap<FName, FGambit> Gambits;
+	TArray<FGambit> Gambits; 
 
 
 	//===============
@@ -130,4 +134,7 @@ public:
 	//helper function, return whether target meets all Gambit conditions
 	UFUNCTION(BlueprintCallable, Category="Default", meta=(AllowPrivateAccess=true))
 	bool ValidGambitConditions(AFFYBattleCharacter* Target, FGambit& Gambit);
+
+	UFUNCTION(BlueprintCallable, Category="Default", meta=(AllowPrivateAccess=true))
+	void ConfirmGambit(FGambit Gambit, TArray<AFFYBattleCharacter*> Targets);
 };

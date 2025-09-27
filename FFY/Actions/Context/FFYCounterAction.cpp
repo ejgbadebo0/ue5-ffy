@@ -49,3 +49,27 @@ void AFFYCounterAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<A
 	}
 	
 }
+
+bool AFFYCounterAction::ContextCondition(AFFYBattleCharacter* ActionOwner)
+{
+	bool Result = true;  
+	
+	if (ActionOwner->DamageSource != nullptr)
+	{
+		FDamageAttributes DamageAttributes = ActionOwner->DamageSource->GetDamageAttributes_Implementation();
+		switch (DamageAttributes.AttackType)
+		{
+			default:
+				break; 
+			case EAttackType::MELEE:
+				break;
+			case EAttackType::RANGED:
+				if (ActionOwner->BattleCharacterStats.Equipment.Weapon.EquipmentData.AttackType == EAttackType::MELEE)
+				{
+					Result = false;
+				}
+		}
+	};
+	
+	return Result;
+}

@@ -41,5 +41,6 @@ void UFFYMagicOptionWidget::PerformAction()
 
 void UFFYMagicOptionWidget::ContextAction_Implementation(UFFYPartyMemberOptionWidget* CharacterWidget, bool SelectAll)
 {
+	OwnerMenu->PlayMenuSound_Implementation(1);
 	OwnerMenu->NavigateToMenu(FName("Magic"), CharacterWidget->GetCharacterName());
 }

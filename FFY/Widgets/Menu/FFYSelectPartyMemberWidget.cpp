@@ -82,11 +82,22 @@ void UFFYSelectPartyMemberWidget::SetSelectAll(bool Value)
 
 void UFFYSelectPartyMemberWidget::ContextRefresh_Implementation(int Index)
 {
-	for (auto o : Options)
+	UFFYGameInstance* GameInstance = Cast<UFFYGameInstance>(GetGameInstance());
+	if (GameInstance)
 	{
-		if (o)
+		int idx = 0;
+		//get party member data
+		for (FPartySlot i: GameInstance->GetParty())
 		{
-			
+			if (Options.IsValidIndex(idx))
+			{
+				UFFYPartyMemberOptionWidget* Option = Cast<UFFYPartyMemberOptionWidget>(Options[idx]);
+				if (Option)
+				{
+					Option->InitializeOption(i);
+				}
+			}
+			idx++;
 		}
 	}
 }

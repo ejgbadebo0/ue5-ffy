@@ -37,11 +37,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Widget, meta = (BindWidget))
 	UFFYSlotEquipOptionWidget* AccessorySlotWidget;
-
-	
-    	//needs FBattleCharacterData widget variables
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	TMap<FName, UTexture2D*> PortraitTextureCache;
     
     	//From PartyMemberOption 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Widget, meta = (BindWidget))	

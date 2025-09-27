@@ -61,7 +61,7 @@ protected:
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UI)
 	FText DisplayTextLabel = FText::GetEmpty();
-
+	
 	UFUNCTION(BlueprintCallable)
 	virtual FText GetDescription();
 	
@@ -87,4 +87,11 @@ public:
 	
 	UFUNCTION()
 	virtual void PerformAction();
+
+	
+
+	//BP EVENTS:
+	
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	void OnViewportResized(int ViewportX, int ViewportY);
 };

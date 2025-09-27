@@ -3,6 +3,7 @@
 
 #include "FFYPlayerBattleManager.h"
 
+#include "FFYBattleCameraTransform.h"
 #include "FFYBattleGameMode.h"
 #include "FFYBattleSpawnContainer.h"
 #include "FFYBattleSpawnTransform.h"
@@ -11,6 +12,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Widgets/FFYBattleWidget.h"
 #include "Widgets/FFYActionWidget.h"
+#include "Widgets/FFYChainWidget.h"
 #include "Widgets/FFYBattleResultsWidget.h"
 
 // Sets default values
@@ -29,18 +31,45 @@ AFFYPlayerBattleManager::AFFYPlayerBattleManager()
 	MainCamera->bUsePawnControlRotation = false;
 }
 
+void AFFYPlayerBattleManager::ChangeDefaultTransform()
+{
+	if (BattleCameraTransforms.Num() > 1)
+	{
+		int RandomIndex = FMath::RandRange(0, BattleCameraTransforms.Num() - 1);
+		DefaultTransform = BattleCameraTransforms[RandomIndex];
+
+		this->SetActorTransform(DefaultTransform);
+	}
+}
+
 // Called when the game starts or when spawned
 void AFFYPlayerBattleManager::BeginPlay()
 {
 	Super::BeginPlay();
 
+	//Find and choose initial camera position from list of transform actors
 	DefaultTransform = GetActorTransform();
-	
+
+	BattleCameraTransforms.Emplace(DefaultTransform);
+	TArray<AActor*> OutActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AFFYBattleCameraTransform::StaticClass(), OutActors);
+
+	for (auto Actor : OutActors)
+	{
+		if (Actor)
+		{
+			BattleCameraTransforms.Emplace(Actor->GetActorTransform());
+		}
+	}
+
+	ChangeDefaultTransform();
+
 	//Create widget and initialize variables
 	UFFYGameInstance* GameInstance = Cast<UFFYGameInstance>(GetGameInstance());
 	AFFYBattleSpawnContainer* SpawnContainer = Cast<AFFYBattleSpawnContainer>(UGameplayStatics::GetActorOfClass(GetWorld(), AFFYBattleSpawnContainer::StaticClass()));
 	BattleWidget = CreateWidget<UFFYBattleWidget>(GetWorld(), MasterWidgetClass);
 	ActionWidget = CreateWidget<UFFYActionWidget>(GetWorld(), ActionWidgetClass);
+	ChainWidget = CreateWidget<UFFYChainWidget>(GetWorld(), ChainWidgetClass);
 
 	if (GameInstance && SpawnContainer)
 	{
@@ -56,7 +85,7 @@ void AFFYPlayerBattleManager::BeginPlay()
 				PartySpawn->OnWaitActionUsed.AddUniqueDynamic(this, &AFFYPlayerBattleManager::SetBattleActiveState);
 				PartySpawn->OnFocusedStateChanged.AddUniqueDynamic(this, &AFFYPlayerBattleManager::OnFocusStateChanged);
 				PartySpawn->OnCameraActionSelected.AddUniqueDynamic(this, &AFFYPlayerBattleManager::OnCameraActionSelected);
-
+				PartySpawn->OnClash.AddUniqueDynamic(this, &AFFYPlayerBattleManager::OnClashEvent);
 				//===============
 				BattleWidget->AddHUDSlot(PartySpawn);
 			}
@@ -86,6 +115,11 @@ void AFFYPlayerBattleManager::BeginPlay()
 			BattleWidget->LoadBattleContext_Implementation(Party[0]);
 			BattleWidget->AddToViewport();
 		}
+	}
+
+	if (ChainWidget)
+	{
+		ChainWidget->AddToViewport();
 	}
 }
 
@@ -130,6 +164,8 @@ void AFFYPlayerBattleManager::Tick(float DeltaTime)
 				e->UpdateATB(DeltaTime);
 			}
 		}
+
+		UpdateFallOff_Implementation(DeltaTime);
 	}
 
 }
@@ -335,8 +371,34 @@ void AFFYPlayerBattleManager::CheckLossCondition(AFFYBattleCharacter* Character)
 
 void AFFYPlayerBattleManager::CheckWinCondition(AFFYBattleCharacter* Character)
 {
+	//add enemy base EXP value to total
 	float EXPToAdd = Character->BattleCharacterStats.EXP;
 	PartyEXPGained += EXPToAdd;
+	//evaluate enemy drop table for possible items
+	TArray<FName> Drops;
+	Character->DropTable.GetKeys(Drops);
+	for (auto k : Drops)
+	{
+		float* DropProbability = Character->DropTable.Find(k);
+		if (DropProbability != nullptr)
+		{
+			if (FMath::RandRange(0.f, 1.f) <= *DropProbability)
+			{
+				int* Value = ItemDrops.Find(k);
+				
+				if (k == FName("GIL")) //Gil amounts are guaranteed, probability is flat amount
+				{
+					int Gil = FMath::Floor(*DropProbability);
+					
+					ItemDrops.Add(k, (Value != nullptr) ? *Value + Gil : Gil);
+				}
+				else
+				{
+					ItemDrops.Add(k, (Value != nullptr) ? *Value + 1 : 1);
+				}
+			}
+		}
+	}
 
 	if (Enemies.Contains(Character))
 	{
@@ -344,11 +406,7 @@ void AFFYPlayerBattleManager::CheckWinCondition(AFFYBattleCharacter* Character)
 		{
 			//win
 			GEngine->AddOnScreenDebugMessage(-1, 55.f, FColor::White, "VICTORY CONDITION REACHED: No enemies left");
-			if (BattleWidget)
-			{
-				BattleWidget->BattleEnd();
-			}
-			GetWorld()->GetTimerManager().SetTimer(VictoryTimer, this, &AFFYPlayerBattleManager::Victory, 3.f);
+			StartVictory();
 		}
 		else
 		{
@@ -373,18 +431,25 @@ void AFFYPlayerBattleManager::CheckWinCondition(AFFYBattleCharacter* Character)
 
 			//win
 			GEngine->AddOnScreenDebugMessage(-1, 55.f, FColor::White, "VICTORY CONDITION REACHED: Enemies can't act");
-			if (BattleWidget)
-			{
-				BattleWidget->BattleEnd();
-			}
-			GetWorld()->GetTimerManager().SetTimer(VictoryTimer, this, &AFFYPlayerBattleManager::Victory, 3.f);
+			StartVictory();
 		}
 	}
 }
 
+void AFFYPlayerBattleManager::StartVictory()
+{
+	if (BattleWidget)
+	{
+		BattleWidget->BattleEnd();
+	}
+	ChainBonus = FMath::Min( 1.5f,1.f + CurrentChain/50.f);
+	ResetChain_Implementation();
+	GetWorld()->GetTimerManager().SetTimer(VictoryTimer, this, &AFFYPlayerBattleManager::Victory, 3.f);
+}
+
 void AFFYPlayerBattleManager::Victory()
 {
-
+	bHasBattleStarted = false;
 
 	IFFYBattleEvents* GameInstance = Cast<IFFYBattleEvents>(GetGameInstance());
 	BattleResultsWidget = CreateWidget<UFFYBattleResultsWidget>(GetWorld(), BattleResultsWidgetClass);
@@ -392,6 +457,19 @@ void AFFYPlayerBattleManager::Victory()
 	{
 		
 		BattleResultsWidget->AddToViewport();
+
+		//reward item drops
+		TArray<FName> Drops;
+		ItemDrops.GetKeys(Drops);
+		for (auto k : Drops)
+		{
+			int* DropAmount = ItemDrops.Find(k);
+			if (DropAmount!= nullptr)
+			{
+				GameInstance->AddFromDrop_Implementation(k, *DropAmount);
+				BattleResultsWidget->AddItemDropSlot(k, *DropAmount);
+			}
+		}
 		
 		for (auto p : Party)
 		{
@@ -436,6 +514,7 @@ FBattleEXPData AFFYPlayerBattleManager::CalculateEXPGained(AFFYBattleCharacter* 
 	{
 		//set starter values
 		EXPDataResult.CharacterName = Character->BattleCharacterStats.CharacterName;
+		EXPDataResult.ChainBonus = ChainBonus;
 		EXPDataResult.InitialLV = Character->BattleCharacterStats.LV;
 		EXPDataResult.InitialEXPValue = Character->BattleCharacterStats.EXP;
 		EXPDataResult.InitialReqEXPValue = Character->BattleCharacterStats.ReqEXP;
@@ -453,7 +532,7 @@ FBattleEXPData AFFYPlayerBattleManager::CalculateEXPGained(AFFYBattleCharacter* 
 		}
 
 		//calculate how many levels are gained
-		EXPDataResult.TotalEXPGain = PartyEXPGained;
+		EXPDataResult.TotalEXPGain = FMath::Floor(PartyEXPGained * ChainBonus);
 		EXPDataResult.EXPValueResult = Character->BattleCharacterStats.EXP;
 		EXPDataResult.ReqEXPValueResult = Character->BattleCharacterStats.ReqEXP;
 		
@@ -530,6 +609,7 @@ void AFFYPlayerBattleManager::ResetBattleActiveState(EActionState NewActionState
 	}
 }
 
+
 void AFFYPlayerBattleManager::SetBattleActiveState(AFFYBattleCharacter* Character)
 {
 	if (Character)
@@ -567,7 +647,7 @@ void AFFYPlayerBattleManager::OnCameraActionSelected(AFFYBattleCharacter* Charac
                                                      FCameraActionContainer CameraActionContainer)
 {
 	if (Character && (CameraActionContainer.Priority > CurrentCameraPriority ||
-		(CameraActionContainer.bCanOverride && CameraActionContainer.Priority == CurrentCameraPriority)))
+		(CameraActionContainer.bCanOverride && CameraActionContainer.Priority == CurrentCameraPriority)) || bCameraActionOverride)
 	{
 		StopOngoingCameraAction();
 		CurrentCameraPriority = CameraActionContainer.Priority;
@@ -589,6 +669,7 @@ void AFFYPlayerBattleManager::UpdateEnemies(TArray<AFFYBattleCharacter*> LoadedE
 				Enemies[i]->OnCharacterDefeated.AddUniqueDynamic(this, &AFFYPlayerBattleManager::CheckWinCondition);
 				Enemies[i]->OnWaitActionUsed.AddUniqueDynamic(this, &AFFYPlayerBattleManager::SetBattleActiveState);
 				Enemies[i]->OnCameraActionSelected.AddUniqueDynamic(this, &AFFYPlayerBattleManager::OnCameraActionSelected);
+				Enemies[i]->OnClash.AddUniqueDynamic(this, &AFFYPlayerBattleManager::OnClashEvent);
 			}
 		}
 }

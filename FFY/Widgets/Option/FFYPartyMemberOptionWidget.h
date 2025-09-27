@@ -26,9 +26,6 @@ protected:
 		return Super::GetDescription();
 	}
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	TMap<FName, UTexture2D*> PortraitTextureCache;
-
 	//Set from PartySlot struct
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Widget, meta = (BindWidget))	
 	UImage* Portrait;

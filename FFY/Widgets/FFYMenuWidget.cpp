@@ -211,11 +211,51 @@ void UFFYMenuWidget::StartSelection_Implementation(UFFYOptionWidget* SelectedOpt
 	}
 }
 
+void UFFYMenuWidget::PlayMenuSound_Implementation(uint8 SoundIndex)
+{
+	switch (SoundIndex)
+	{
+	default:
+		break;
+	case 0: //hover/cycle events
+		if (SelectedSoundWave)
+		{
+			PlaySound(SelectedSoundWave);
+		}
+		break;
+	case 1: //default confirm events
+		if (ConfirmedSoundWave)
+		{
+			PlaySound(ConfirmedSoundWave);
+		}
+		break;
+	case 2: //selected disabled button event
+		if (ErrorSoundWave)
+		{
+			PlaySound(ErrorSoundWave);
+		}
+		break;
+	case 3: //Selection state confirm event
+		if (PartyMemberSelectSoundWave)
+		{
+			PlaySound(PartyMemberSelectSoundWave);
+		}
+		break;
+	case 4:
+		if (CustomSoundWave)
+		{
+			PlaySound(CustomSoundWave);
+		}
+		break;
+	}
+}
+
 void UFFYMenuWidget::SelectAllInputEvent_Implementation()
 {
 	if (GetSelectionWidget())
 	{
 		GetSelectionWidget()->ToggleSelectionMode();
+		PlayMenuSound_Implementation(0);
 	}
 }
 
@@ -229,7 +269,7 @@ void UFFYMenuWidget::SwitchTargetsInputEvent_Implementation()
 		//GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Black, FString::Printf(TEXT("%s"), *Valstr));
 		
 		SetDefaultTargetGroup_Implementation( !Result, false);
-		
+		PlayMenuSound_Implementation(0);
 	}
 }
 
@@ -239,5 +279,6 @@ void UFFYMenuWidget::CycleInputEvent_Implementation(int DeltaIndex)
 	{
 		EndSelection_Implementation();
 	}
+	PlayMenuSound_Implementation(0);
 	CycleContextIndex(DeltaIndex);
 }

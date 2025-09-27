@@ -13,6 +13,7 @@
 
 
 class AFFYBattleCharacter;
+class AFFYAction;
 /**
  * 
  */
@@ -46,6 +47,9 @@ struct FFY_API FDamageAttributes
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<EStatusEffect> Removes;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float InnateModifier = 0.0f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EAttackType AttackType = EAttackType::NONE;
@@ -82,7 +86,10 @@ struct FFY_API FBattleCharacterData : public FTableRowBase
 	EEquipmentClass EquipmentClass = EEquipmentClass::NONE;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName CharacterName = NAME_None; 
+	FName CharacterName = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UTexture2D* Portrait;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 LV = 1;
@@ -158,6 +165,16 @@ struct FFY_API FBattleCharacterData : public FTableRowBase
 	//abilities can be assigned through a higher level struct (maybe defined in GameInstance)
 };
 
+USTRUCT(BlueprintType)
+struct FFY_API FPartySlot
+{
+	GENERATED_BODY();
+
+	FBattleCharacterData PartyCharacterData;
+	TArray<TSubclassOf<AFFYAction>> PartyCharacterAbilities;
+	//TArray<AFFYAction*> PartyCharacterActions;
+};
+
 
 USTRUCT(BlueprintType)
 struct FFY_API FBattleEXPData
@@ -172,6 +189,10 @@ struct FFY_API FBattleEXPData
 	//total exp rewarded from battle
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float TotalEXPGain = 0.f;
+
+	//chain bonus
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float ChainBonus = 1.f;
 	
 	//levels gained on character after applying total exp
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -210,6 +231,10 @@ struct FFY_API FCameraActionData
 	//duration that timeline has to lerp to target
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float TimelineDuration = 1.f;
+
+	//if non-negative, CameraAction can be overriden by any priority after duration elapses
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float LockDuration = -1.f;
 	
 	//how fast camera will lerp transforms
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

@@ -41,7 +41,7 @@ void UFFYBattleItemOptionWidget::PerformAction()
 	}
 
 	OwnerMenu->SetDefaultTargetGroup_Implementation(false, false);
-	OwnerMenu->StartSelection_Implementation(this, ETargetType::SINGLE);
+	OwnerMenu->StartSelection_Implementation(this, InventoryItem.TargetType);
 }
 
 void UFFYBattleItemOptionWidget::ContextAction_Implementation(UFFYPartyMemberOptionWidget* CharacterWidget,

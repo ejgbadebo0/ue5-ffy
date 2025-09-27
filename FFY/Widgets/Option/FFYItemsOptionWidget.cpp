@@ -23,6 +23,8 @@ void UFFYItemsOptionWidget::OnUnselected()
 
 void UFFYItemsOptionWidget::PerformAction()
 {
+	Super::PerformAction();
+	
 	if ( bIsDisabled || OwnerMenu->GetCurrentMenuMode() != EMenuMode::NONE )
 	{
 		return;

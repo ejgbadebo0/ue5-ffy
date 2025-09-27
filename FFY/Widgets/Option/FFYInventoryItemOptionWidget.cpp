@@ -29,7 +29,7 @@ void UFFYInventoryItemOptionWidget::PerformAction()
 		return;
 	}
 
-	OwnerMenu->StartSelection_Implementation(this, ETargetType::SINGLE);
+	OwnerMenu->StartSelection_Implementation(this, InventoryItem.TargetType);
 	
 }
 
@@ -69,6 +69,7 @@ void UFFYInventoryItemOptionWidget::ContextAction_Implementation(UFFYPartyMember
 {
 	FName CharacterName = CharacterWidget->GetCharacterName();
 	UFFYGameInstance* GameInstance = Cast<UFFYGameInstance>(GetWorld()->GetGameInstance());
+	OwnerMenu->PlayMenuSound_Implementation(3);
 	if (CharacterName.IsValid() && GameInstance)
 	{
 		//Get index of FPartySlot since directly referencing the struct from FPartySlot ref doesn't update

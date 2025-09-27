@@ -86,6 +86,10 @@ void AFFYAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFFYBatt
 	else
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Silver, "FAILED TO EXECUTE: Resources");
+		if (ActionOwner->ActorHasTag(FName("Enemy")))
+		{
+			ActionOwner->ATB -= 10.f;
+		}
 	}
 }
 
@@ -162,6 +166,11 @@ void AFFYAction::Consume(AFFYBattleCharacter* ActionOwner, int8 Targets)
 	float MPConsume = (TargetType == ETargetType::BOTH) ? MPCost * Targets : MPCost;
 
 	ActionOwner->Consume(ATBConsume, HPConsume, MPConsume);
+}
+
+bool AFFYAction::ContextCondition(AFFYBattleCharacter* ActionOwner)
+{
+	return true; 
 }
 
 void AFFYAction::FreeUse(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattleCharacter*> Targets)

@@ -10,6 +10,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "FFYCharacter.h"
 #include "FFYDataEnums.h"
+#include "AssetTypeActions/AssetDefinition_SoundBase.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values

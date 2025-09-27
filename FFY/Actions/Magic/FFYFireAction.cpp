@@ -37,6 +37,7 @@ void AFFYFireAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFFY
 		EElement::FIRE,
 	TArray<EStatusEffect>(),
 	TArray<EStatusEffect>(),
+		0.0f,
 		EAttackType::RANGED);
 	
 	Super::ExecuteAction(ActionOwner, Targets);
@@ -61,6 +62,7 @@ void AFFYFireAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacte
 	EElement::FIRE,
 TArray<EStatusEffect>(),
 TArray<EStatusEffect>(),
+	0.0f,
 	EAttackType::RANGED);
 
 	Target->ReceiveDamage_Implementation(ActionOwner, this);

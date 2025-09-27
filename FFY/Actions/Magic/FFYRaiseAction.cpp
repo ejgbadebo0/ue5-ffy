@@ -38,6 +38,7 @@ void AFFYRaiseAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFF
 		EElement::STATUS,
 		TArray<EStatusEffect>(),
 		Effects,
+		0.0f,
 		EAttackType::RANGED);
 
 	Super::ExecuteAction(ActionOwner, Targets);
@@ -83,6 +84,7 @@ void AFFYRaiseAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharact
 	EElement::STATUS,
 	TArray<EStatusEffect>(),
 	Effects,
+	0.0f,
 	EAttackType::RANGED);
 
 	Target->ReceiveHealing_Implementation(ActionOwner, this);

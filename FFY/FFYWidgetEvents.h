@@ -32,6 +32,9 @@ class FFY_API IFFYWidgetEvents
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void ViewportResized(int ViewportX, int ViewportY);
+
 	//Unselect all options
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void ResetOptions();
@@ -43,7 +46,7 @@ public:
 	//Called up by OptionWidget to PartySelectionMenu
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void PartyMemberSelect(UFFYPartyMemberOptionWidget* CharacterWidget);
-
+	
 	//StartSelection
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void StartSelection(UFFYOptionWidget* SelectedOption, ETargetType SelectedTargetType = ETargetType::SINGLE);
@@ -127,5 +130,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void MenuActionSelected(AFFYAction* SelectedAction);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void PlayMenuSound(uint8 SoundIndex);
 	
 };

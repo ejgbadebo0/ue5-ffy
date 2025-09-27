@@ -45,7 +45,7 @@ public:
 	void AddEXPSlot(FBattleEXPData EXPData);
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
-	void AddItemDropSlot(FName ItemName, int Quantity);
+	void AddItemDropSlot(FName ItemID, int Quantity);
 	
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void StartDisplay();

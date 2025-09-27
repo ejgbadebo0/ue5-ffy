@@ -20,7 +20,7 @@ void AFFYSpellAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFF
 		AveragedPosition /= Targets.Num();
 		ActionOwner->UpdateMotionWarpTransform("MagicCastWarp",
 			ActionOwner->GetActorLocation(),
-			UKismetMathLibrary::FindLookAtRotation(ActionOwner->GetActorLocation(), AveragedPosition)
+			FRotator(0.0f, UKismetMathLibrary::FindLookAtRotation(ActionOwner->GetActorLocation(), AveragedPosition).Yaw, 0.0f)
 			);
 
 		DebugLocations(ActionOwner->GetActorLocation(), FVector::ZeroVector, AveragedPosition, FVector::ZeroVector);

@@ -87,6 +87,7 @@ void AFFYCharacter::BeginPlay()
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, TEXT("FOUND GAMEINSTANCE..."));
 		bHasEncounters = GameInstance->bHasEncounters;
+		GameInstance->OnWorldDamage.AddUniqueDynamic(this, &AFFYCharacter::WorldDamageEvent); 
 	}
 	
 	if (bHasEncounters)

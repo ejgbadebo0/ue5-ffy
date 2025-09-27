@@ -24,10 +24,6 @@ protected:
 	//Initialized through LoadContext and use to navigate upon Cycle input. 
 	
 
-	//needs FBattleCharacterData widget variables
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	TMap<FName, UTexture2D*> PortraitTextureCache;
-
 	//From PartyMemberOption 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Widget, meta = (BindWidget))	
 	UImage* Portrait;

@@ -25,7 +25,7 @@ AFFYDefendAction::AFFYDefendAction()
 void AFFYDefendAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattleCharacter*> Targets)
 {
 	//initial check if can give defense benefits
-	if (CanUse(ActionOwner, 1) && CanExecute(ActionOwner) && (ActionOwner->ActiveState != EActiveState::WAIT))
+	if (CanUse(ActionOwner, 1) && CanExecute(ActionOwner) && (ActionOwner->ActiveState != EActiveState::WAIT) && (ActionOwner->ActionState == EActionState::IDLE || ActionOwner->ActionState == EActionState::DEFENDING))
 	{
 		ActionOwner->ActionState = EActionState::DEFENDING;
 		ActionOwner->OnStartDefendAction_Implementation(ActionOwner->ATB); 

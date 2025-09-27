@@ -24,6 +24,8 @@ class FFY_API UFFYMasterWidget : public UUserWidget, public IFFYWidgetEvents
 	GENERATED_BODY()
 
 protected:
+	
+	void OnViewportResized(FViewport* Viewport, unsigned I);
 
 	virtual void NativeConstruct() override;
 
@@ -61,6 +63,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UI)
 	bool bShouldKeepTime = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Audio)
+	USoundWave* CancelSoundWave;
 	
 	virtual void NavigateToMenu(FName Menu, FName ContextName);
 

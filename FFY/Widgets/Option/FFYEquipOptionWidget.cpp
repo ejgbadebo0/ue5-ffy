@@ -39,5 +39,6 @@ void UFFYEquipOptionWidget::PerformAction()
 
 void UFFYEquipOptionWidget::ContextAction_Implementation(UFFYPartyMemberOptionWidget* CharacterWidget, bool SelectAll)
 {
+	OwnerMenu->PlayMenuSound_Implementation(1);
 	OwnerMenu->NavigateToMenu(FName("Equip"), CharacterWidget->GetCharacterName());
 }

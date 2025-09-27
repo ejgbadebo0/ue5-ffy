@@ -141,6 +141,17 @@ void UFFYOptionWidget::PerformAction()
 {
 	if ( bIsDisabled || OwnerMenu->GetCurrentMenuMode() != EMenuMode::NONE )
 	{
+		if (OwnerMenu)
+		{
+			OwnerMenu->PlayMenuSound_Implementation(2);
+		}
 		return;
+	}
+	else
+	{
+		if (OwnerMenu)
+		{
+			OwnerMenu->PlayMenuSound_Implementation(1);
+		}
 	}
 }

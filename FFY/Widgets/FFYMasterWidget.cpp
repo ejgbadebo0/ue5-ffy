@@ -4,13 +4,34 @@
 #include "FFYMasterWidget.h"
 
 #include "FFYMenuWidget.h"
+#include "ScreenPass.h"
 #include "Components/RichTextBlock.h"
 #include "FFY/FFYDataEnums.h"
 #include "Menu/FFYSelectPartyMemberWidget.h"
+#include "Slate/SGameLayerManager.h"
+
+void UFFYMasterWidget::OnViewportResized(FViewport* Viewport, unsigned I)
+{
+	if (WidgetSwitcher)
+	{
+		IFFYWidgetEvents* Widget = Cast<IFFYWidgetEvents>(WidgetSwitcher->GetActiveWidget());
+		if (Widget)
+		{
+			int x = Viewport->GetSizeXY().X;
+			int y = Viewport->GetSizeXY().Y;
+			Widget->ViewportResized_Implementation(x, y);
+		}
+	}
+}
 
 void UFFYMasterWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	if (GEngine && GEngine->GameViewport)
+	{
+		GEngine->GameViewport->Viewport->ViewportResizedEvent.AddUObject(this, &UFFYMasterWidget::OnViewportResized);
+	}
 
 	if (WidgetSwitcher)
 	{
@@ -47,9 +68,10 @@ void UFFYMasterWidget::NativeDestruct()
 	{
 		NavigateToMenu(FName("Main"), NAME_None);
 	}
-	if (bShouldKeepTime)
+
+	if (GEngine && GEngine->GameViewport)
 	{
-		
+		GEngine->GameViewport->Viewport->ViewportResizedEvent.RemoveAll(this);
 	}
 }
 
@@ -81,6 +103,10 @@ void UFFYMasterWidget::PreviousMenu()
 
 	if (CurrentMenu.IsValid())
 	{
+		if (CancelSoundWave)
+		{
+			PlaySound(CancelSoundWave);
+		}
 		FName* Previous = PreviousMenus.Find(CurrentMenu);
 		NavigateToMenu(*Previous, NAME_None);
 	}

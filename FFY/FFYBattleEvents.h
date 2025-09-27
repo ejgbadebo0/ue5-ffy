@@ -50,6 +50,9 @@ public:
 	void SetActionState(EActionState NewState, bool bSetWait);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void SetCanClash(bool Value);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void OnStartDefendAction(float ATBValue);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
@@ -62,7 +65,7 @@ public:
 	void DestroyNiagaraEffect(UNiagaraSystem* NiagaraComponent);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	void BeginSpawnBattleEffect(TSubclassOf<AFFYBattleEffect> BattleEffectClass);
+	void BeginSpawnBattleEffect(TSubclassOf<AFFYBattleEffect> BattleEffectClass, bool bUseSocket);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void TriggerBattleEffect(int HitIndex);
@@ -72,6 +75,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void UseInventoryItem(FName ID, AFFYBattleCharacter* Source, AFFYBattleCharacter* Target);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void AddFromDrop(FName ItemID, int32 Amount);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void EnableContextCommand(FName ActionName, float Duration);
@@ -89,7 +95,28 @@ public:
 	bool DistanceCheck(float Distance);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	bool PositionCheck(float Distance);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void UpdatePartyMemberStats(FBattleCharacterData CharacterData);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	int GetChain();
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void UpdateChain(int Amount, float FallOffRate);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void ResetChain();
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void AddFallOff(float FallOff);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void UpdateFallOff(float Value);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void EvaluateStatusEffects();
 
 	
 

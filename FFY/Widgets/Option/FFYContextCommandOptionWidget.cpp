@@ -26,7 +26,8 @@ void UFFYContextCommandOptionWidget::Reload(AFFYBattleCharacter* Character)
 		UMaterialInstanceDynamic* MaterialInstance = Portrait->GetDynamicMaterial();
 		if (MaterialInstance)
 		{
-			MaterialInstance->SetTextureParameterValue("InTexture", CharacterReference->PortraitImage);
+			MaterialInstance->SetTextureParameterValue("InTexture", CharacterReference->BattleCharacterStats.Portrait);
+			MaterialInstance->SetScalarParameterValue("Offset", CharacterReference->PortraitOffset);
 		}
 		
 		if (Character->ActionContainer->ContextCommand && CommandTextBlock)

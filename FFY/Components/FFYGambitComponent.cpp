@@ -46,26 +46,24 @@ void UFFYGambitComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
  * If more than one gambit returns true, sort based on priority and randomly select
  * from the highest priority gambits.
  */
-void UFFYGambitComponent::EvaluateGambits(float ATBValue)
+void UFFYGambitComponent::EvaluateGambits(float ATBValue) //weird behavior with 
 {
 	if (ATBValue >= 100.f)
 	{
 		//Iterate over Action/Gambit entries to see if any can be used
-		TArray<FName> List;
-		Gambits.GenerateKeyArray(List);
-		if (!List.IsEmpty())
+		
+		if (!Gambits.IsEmpty())
 		{
-			for (FName KeyName : List)
+			for (auto Gambit : Gambits)
 			{
-				FGambit* Gambit = Gambits.Find(KeyName);
 				//1: determine if gambit can be performed
-				if (Gambit && (!Gambit->EvaluateOnce || LastSelection != KeyName))
+				if ((!Gambit.EvaluateOnce || LastSelection != Gambit.ActionName))
 				{
 					//2: find targets for gambit action
 					TArray<AFFYBattleCharacter*> Targets;
-					if (Gambit->TargetClass == ETargetClass::SELF)
+					if (Gambit.TargetClass == ETargetClass::SELF)
 					{
-						if (ValidGambitConditions(OwnerCharacter, *Gambit))
+						if (ValidGambitConditions(OwnerCharacter, Gambit))
 						{
 							Targets.Emplace(OwnerCharacter);
 						}
@@ -74,7 +72,7 @@ void UFFYGambitComponent::EvaluateGambits(float ATBValue)
 					{
 						TArray<AActor*> OutActors;
 
-						switch (Gambit->TargetClass)
+						switch (Gambit.TargetClass)
 						{
 						case ETargetClass::NONE:
 							UGameplayStatics::GetAllActorsOfClass(GetWorld(), TSubclassOf<AFFYBattleCharacter>(), OutActors);
@@ -96,7 +94,7 @@ void UFFYGambitComponent::EvaluateGambits(float ATBValue)
 							if (Character)
 							{
 								//check if we want KO'd characters to be selectable and evaluate each member to see if they meet gambit conditions
-								if ( (!Gambit->bFilterDead || (Gambit->bFilterDead && !Character->BattleCharacterStats.StatusEffects.Contains(EStatusEffect::KO))) && ValidGambitConditions(Character, *Gambit) )
+								if ( (!Gambit.bFilterDead || (Gambit.bFilterDead && !Character->BattleCharacterStats.StatusEffects.Contains(EStatusEffect::KO))) && ValidGambitConditions(Character, Gambit) )
 								{
 									Targets.Emplace(Character);
 								}
@@ -110,7 +108,7 @@ void UFFYGambitComponent::EvaluateGambits(float ATBValue)
 					//resize array if not targeting all entities
 					if (Targets.Num() > 0)
 					{
-						if (!Gambit->bTargetAll)
+						if (!Gambit.bTargetAll)
 						{
 							int TargetIndex = FMath::RandRange(0, Targets.Num() - 1);
 							AFFYBattleCharacter* Target = Targets[TargetIndex];
@@ -127,14 +125,7 @@ void UFFYGambitComponent::EvaluateGambits(float ATBValue)
 					//5: If Gambit conditions are valid, select and break loop
 					if (Result)
 					{
-						LastSelection = KeyName;
-						OnGambitSelected.Broadcast(KeyName, *Gambit);
-						OwnerCharacter->ExecuteGambitCommand(KeyName, Targets);
-
-						FString Name = OwnerCharacter->GetName();
-						FString TName = Targets[0]->GetName();
-						FString AName = KeyName.ToString();
-						GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("GAMBIT: %s uses %s on %s "), *Name, *AName, *TName));
+						ConfirmGambit(Gambit, Targets);
 						break;
 					}
 					//========================================================
@@ -199,12 +190,36 @@ bool UFFYGambitComponent::ValidGambitConditions(AFFYBattleCharacter* Target, FGa
 	if (Gambit.NumAllies > 0)
 	{
 		TArray<AActor*> OutParty;
+		int Total = 0; 
 		UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Party"), OutParty);
-		if (OutParty.Num() < Gambit.NumAllies)
+		for (auto p : OutParty)
+		{
+			IFFYBattleEvents* PartyMember = Cast<IFFYBattleEvents>(p);
+			if (PartyMember)
+			{
+				if (!PartyMember->GetIsDead_Implementation())
+				{
+					Total++;
+				}
+			}
+		}
+		if (Total < Gambit.NumAllies)
 		{
 			Result = false;
 		}
 	}
 	return Result;
+}
+
+void UFFYGambitComponent::ConfirmGambit(FGambit Gambit, TArray<AFFYBattleCharacter*> Targets)
+{
+	LastSelection = Gambit.ActionName;
+	OnGambitSelected.Broadcast(Gambit.ActionName, Gambit);
+	OwnerCharacter->ExecuteGambitCommand(Gambit.ActionName, Targets);
+
+	FString Name = OwnerCharacter->GetName();
+	FString TName = Targets[0]->GetName();
+	FString AName = Gambit.ActionName.ToString();
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("GAMBIT: %s uses %s on %s "), *Name, *AName, *TName));
 }
 

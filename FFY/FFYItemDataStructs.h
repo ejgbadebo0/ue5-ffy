@@ -4,6 +4,7 @@
 
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "CoreMinimal.h"
+#include "FFYDataEnums.h"
 
 #include "FFYItemDataStructs.generated.h"
 
@@ -28,6 +29,10 @@ enum class EItemFuncCode : uint8
 {
 	NONE UMETA(DisplayName = "None"),
 	POTION UMETA(DisplayName = "Potion"),
+	ETHER UMETA(DisplayName = "Ether"),
+	ELIXIR UMETA(DisplayName = "Elixir"),
+	PHOENIX UMETA(DisplayName = "Phoenix"),
+	ANTIDOTE UMETA(DisplayName = "Antidote"),
 	E_MAX UMETA(Hidden)
 };
 
@@ -144,6 +149,9 @@ struct FFY_API FItemData : public FTableRowBase
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EItemFuncCode ItemFuncCode = EItemFuncCode::NONE;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	ETargetType TargetType = ETargetType::SINGLE;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIsConsumable = false;

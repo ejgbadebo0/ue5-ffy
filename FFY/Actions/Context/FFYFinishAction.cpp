@@ -46,6 +46,7 @@ void AFFYFinishAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharac
 		ActionOwner->Infusion,
 		Inflict,
 		TArray<EStatusEffect>(),
+		0.2f,
 		InAttackType);
 
 	//Deal Damage

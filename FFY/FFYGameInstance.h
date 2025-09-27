@@ -10,8 +10,8 @@
 #include "FFYBattleEvents.h"
 #include "FFYWidgetEvents.h"
 #include "FFYCharacter.h"
+#include "FFYSaveDataEvents.h"
 #include "FFYTransitions.h"
-#include "IDetailTreeNode.h"
 #include "Engine/GameInstance.h"
 #include "Engine/DataTable.h"
 #include "FFYGameInstance.generated.h"
@@ -20,19 +20,10 @@
 class UFFYActionContainer;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryUpdated);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayTimeUpdated, FText, PTText);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWorldDamage, bool, bIsPoison);
 
 class AFFYAction;
 class UFFYItem;
-
-USTRUCT(BlueprintType)
-struct FFY_API FPartySlot
-{
-	GENERATED_BODY();
-
-	FBattleCharacterData PartyCharacterData;
-	TArray<TSubclassOf<AFFYAction>> PartyCharacterAbilities;
-	//TArray<AFFYAction*> PartyCharacterActions;
-};
 
 USTRUCT(BlueprintType)
 struct FFY_API FClassAbilities : public FTableRowBase
@@ -80,7 +71,7 @@ struct FFY_API FPlayerPreBattleInfo
  *  Main game class, holds party info/progress.
  */
 UCLASS(BlueprintType, Blueprintable)
-class FFY_API UFFYGameInstance : public UGameInstance, public IFFYTransitions, public IFFYBattleEvents, public IFFYWidgetEvents
+class FFY_API UFFYGameInstance : public UGameInstance, public IFFYTransitions, public IFFYBattleEvents, public IFFYWidgetEvents, public IFFYSaveDataEvents
 {
 	GENERATED_BODY()
 
@@ -98,6 +89,8 @@ public:
 	FOnInventoryUpdated OnInventoryUpdated;
 	UPROPERTY(BlueprintAssignable)
 	FOnPlayTimeUpdated OnPlayTimeUpdated;
+	UPROPERTY(BlueprintAssignable)
+	FOnWorldDamage OnWorldDamage;
 	//-----------
 
 	
@@ -117,7 +110,7 @@ public:
 	{
 		return Party;
 	}
-
+	
 	UFUNCTION(BlueprintCallable)
 	int32 GetGil()
 	{
@@ -152,6 +145,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="DEBUG")
 	UBlueprint* DebugBlueprint;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="Save")
+	TMap<FName, uint8> ActorSaveData; 
 	
 	FTimerHandle PlayTimeHandle;
 	
@@ -173,9 +169,14 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Inventory") 
 	void AddToInventory(FItemData InventoryItem, int32 Amount);
-	
 
-	
+	UFUNCTION(BlueprintCallable, Category=Save)
+	void AddToSaveState(FName ItemID, uint8 State)
+	{
+		ActorSaveData.Add(ItemID, State);
+	}
+
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (RowType = "BattleCharacterData"))
 	FDataTableRowHandle PartyTableHandle;
 
@@ -243,9 +244,54 @@ public:
 		EndEncounter();
 	}
 
+	virtual void AddFromDrop_Implementation(FName ItemID, int32 Amount) override
+	{
+		FItemData* Item = ItemsTableHandle.DataTable->FindRow<FItemData>(ItemID, "", true);
+		if (Item)
+		{
+			AddToInventory(*Item, Amount);
+		}
+	}
+
 	virtual void UpdatePlayTime_Implementation() override
 	{
 		ElapsePlayTime();
+	}
+	
+	virtual bool HasSaveData_Implementation(FName ID) override
+	{
+		return ActorSaveData.Contains(ID);
+	}
+
+	virtual void SetSaveState_Implementation(FName ID, uint8 State) override
+	{
+		AddToSaveState(ID, State);
+	}
+
+	virtual uint8 GetSaveState_Implementation(FName ID) override
+	{
+		uint8 Result = *ActorSaveData.Find(ID);
+	
+		return Result;
+	}
+	
+	virtual void EvaluateStatusEffects_Implementation() override
+	{
+		bool Result = false;
+		for (auto& p : Party)
+		{
+			if (p.PartyCharacterData.StatusEffects.Contains(EStatusEffect::POISON) && !(p.PartyCharacterData.StatusEffects.Contains(EStatusEffect::KO)))
+			{
+				float PoisonDamage = FMath::Floor(p.PartyCharacterData.MaxHP * 0.02f);
+				p.PartyCharacterData.HP = FMath::Max(1.f, p.PartyCharacterData.HP - PoisonDamage );
+				Result = true;
+			}
+		}
+
+		if (Result)
+		{
+			OnWorldDamage.Broadcast(Result);
+		}
 	}
 };
 

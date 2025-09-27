@@ -36,4 +36,10 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void UpdateInitialTarget(AFFYCharacter* Player);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void SetCameraCustomDepth(int Depth, bool Active);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void DarkenScene(bool Active);
 };

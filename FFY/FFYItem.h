@@ -21,6 +21,12 @@ struct FFY_API FItemUseResult
 	float Amount = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<EStatusEffect> RemovedEffects;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<EStatusEffect> AddedEffects;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FText ResultDescription = FText();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

@@ -98,6 +98,7 @@ void UFFYActionOptionWidget::ContextAction_Implementation(UFFYPartyMemberOptionW
 	UFFYGameInstance* GameInstance = Cast<UFFYGameInstance>(GetWorld()->GetGameInstance());
 	if (CharacterName.IsValid() && GameInstance)
 	{
+		OwnerMenu->PlayMenuSound_Implementation(3);
 		//Get index of FPartySlot since directly referencing the struct from FPartySlot ref doesn't update
 		TArray<FPartySlot>& Party = GameInstance->GetParty();
 		for (int i = 0; i < Party.Num(); i++)
@@ -120,6 +121,7 @@ void UFFYActionOptionWidget::ContextAction_Implementation(UFFYPartyMemberOptionW
 					if (!SelectAll)
 					{
 						CharacterWidget->InitializeOption(Party[i]);
+						CharacterWidget->GetOwnerMenu()->ContextRefresh_Implementation(0);
 						OwnerMenu->ContextRefresh_Implementation(UserIndex);
 					}
 				}
@@ -131,6 +133,7 @@ void UFFYActionOptionWidget::ContextAction_Implementation(UFFYPartyMemberOptionW
 			if (SelectionMenu)
 			{
 				SelectionMenu->Refresh();
+				SelectionMenu->ContextRefresh_Implementation(0);
 				OwnerMenu->ContextRefresh_Implementation(UserIndex);
 			}
 		}

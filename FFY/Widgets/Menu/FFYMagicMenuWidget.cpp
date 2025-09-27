@@ -44,10 +44,10 @@ void UFFYMagicMenuWidget::LoadContext_Implementation(FName ContextName)
 		}
 		if (Result) //Has a valid slot, Load widget info
 		{
-			UTexture2D** Image = PortraitTextureCache.Find(PartySlot.PartyCharacterData.CharacterName);
+			UTexture2D* Image = PartySlot.PartyCharacterData.Portrait;
 			if (Image)
 			{
-				Portrait->SetBrushFromTexture(*Image);
+				Portrait->SetBrushFromTexture(Image);
 			}
 	
 			CharacterName->SetText(FText::FromName(PartySlot.PartyCharacterData.CharacterName));

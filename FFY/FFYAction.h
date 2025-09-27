@@ -197,6 +197,11 @@ public:
 	virtual void Consume(AFFYBattleCharacter* ActionOwner, int8 Targets);
 
 	/*
+	 * In cases where Context Command has additional prerequisites, determine whether it can be prompted.
+	 */
+	virtual bool ContextCondition(AFFYBattleCharacter* ActionOwner);
+
+	/*
 	 * In cases where character has a resource-free use of this action
 	 */
 	virtual void FreeUse(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattleCharacter*> Targets);

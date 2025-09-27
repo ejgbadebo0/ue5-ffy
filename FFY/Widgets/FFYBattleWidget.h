@@ -23,7 +23,8 @@ class FFY_API UFFYBattleWidget : public UFFYMasterWidget
 
 	UPROPERTY(VisibleAnywhere, Category="Debug")
 	bool bIsSwitching;
-	
+
+
 public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UI, meta = (BindWidget));
@@ -37,6 +38,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "References")
 	AFFYBattleCharacter* BattleContext;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Audio");
+	USoundWave* SwitchContextSoundWave;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<UFFYPartyHUDSlotOptionWidget> HUDSlotWidgetClass;
@@ -99,6 +103,9 @@ public:
 
 
 	//BP EVENTS:
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void BattleStart();
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void BattleEnd();

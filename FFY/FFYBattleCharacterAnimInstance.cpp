@@ -71,6 +71,7 @@ void UFFYBattleCharacterAnimInstance::EndMontage(UAnimMontage* Montage, bool bIn
 	OnMontageEnded.RemoveDynamic(this, &UFFYBattleCharacterAnimInstance::EndMontage);
 
 	bUpperBodyMontage = false;
+	OwningCharacter->EvaluateStatusEffects_Implementation();
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "ENDMONTAGE EVENT CALLED");
 }
 

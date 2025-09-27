@@ -20,4 +20,5 @@ public:
 
 	virtual float GetCalculatedActionValue(AFFYBattleCharacter* ActionOwner) override;
 	virtual void ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattleCharacter*> Targets) override;
+	virtual bool ContextCondition(AFFYBattleCharacter* ActionOwner) override;
 };

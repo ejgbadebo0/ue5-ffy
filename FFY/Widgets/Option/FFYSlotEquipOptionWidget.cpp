@@ -56,6 +56,8 @@ void UFFYSlotEquipOptionWidget::OnUnselected()
 
 void UFFYSlotEquipOptionWidget::PerformAction()
 {
+	Super::PerformAction();
+	
 	if ( bIsDisabled || OwnerMenu->GetCurrentMenuMode() != EMenuMode::NONE )
 	{
 		return;

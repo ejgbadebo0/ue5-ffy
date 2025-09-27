@@ -13,6 +13,7 @@
 #include "FFYWidgetEvents.h"
 #include "MotionWarpingComponent.h"
 #include "Engine/StreamableManager.h"
+#include "GameFramework/CharacterMovementComponent.h"
 //-------
 #include "FFYBattleCharacter.generated.h"
 
@@ -35,7 +36,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnActionStateChanged, EActionState,
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnActionSelected, AFFYAction*, Action, bool, bIsContext, float, Duration);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnActionQueued, AFFYAction*, Action, AFFYBattleCharacter*, User, TArray<AFFYBattleCharacter*>, ActionTargets);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWaitActionUsed, AFFYBattleCharacter*, Character);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnActionStarted);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnActionFinished);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFocusedStateChanged, AFFYBattleCharacter*, Character, bool, bIsFocused);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnClash, AFFYBattleCharacter*, Character);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCharacterDead, AFFYBattleCharacter*, Character);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnContextCommandActivated, AFFYBattleCharacter*, Character);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnContextCommandDeactivated, AFFYBattleCharacter*, Character);
@@ -94,7 +98,9 @@ public:
 
 	//DELEGATES:
 	FOnCharacterStatsChanged OnCharacterStatsChanged;
+	UPROPERTY(BlueprintAssignable)
 	FOnCharacterDefeated OnCharacterDefeated;
+	UPROPERTY(BlueprintAssignable)
 	FOnATBValueChanged OnATBValueChanged;
 	FOnCharacterSelected OnCharacterSelected;
 	FOnActiveStateChanged OnActiveStateChanged;
@@ -102,7 +108,12 @@ public:
 	FOnActionSelected OnActionSelected;
 	FOnActionQueued OnActionQueued;
 	FOnWaitActionUsed OnWaitActionUsed;
+	UPROPERTY(BlueprintAssignable)
+	FOnActionStarted OnActionStarted;
+	UPROPERTY(BlueprintAssignable)
+	FOnActionFinished OnActionFinished;
 	FOnFocusedStateChanged OnFocusedStateChanged;
+	FOnClash OnClash;
 	FOnContextCommandActivated OnContextCommandActivated;
 	FOnContextCommandDeactivated OnContextCommandDeactivated;
 	FOnCharacterWeakened OnCharacterWeakened;
@@ -115,11 +126,14 @@ public:
 	//Actor Variables: 
 	//----------------------
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="UI", meta=(AllowPrivateAccess=true))
-	UTexture2D* PortraitImage;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats", meta = (AllowPrivateAccess = "true"))
 	FBattleCharacterData BattleCharacterStats;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Stats", meta = (AllowPrivateAccess = "true"))
+	float PortraitOffset = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Defaults", meta = (AllowPrivateAccess = "true"))
+	float FlightHeight =  0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
 	UFFYGambitComponent* GambitComponent;
@@ -127,7 +141,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Animation", meta = (AllowPrivateAccess = "true"))
 	UMotionWarpingComponent* MotionWarpingComponent;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	UWidgetComponent* SelectionWidgetComponent;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Niagara", meta = (AllowPrivateAccess = "true"))
@@ -286,49 +300,72 @@ public:
 	*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Defaults")
 	FTransform DefaultTransform;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Defaults")
+	TMap<FName, float> DropTable;
 	
 	//-------------
 
+	/*
+	* Called from actions that require resources
+	*/
 	UFUNCTION(BlueprintCallable)
 	void Consume(float ATBCost, float HPCost, float MPCost);
 
+	/*
+	* Called from Manager tick
+	*/
 	UFUNCTION(BlueprintCallable)
 	void UpdateATB(float DeltaTimeX);
 
+	/*
+	* Called from actions that need to update damage attributes
+	*/
 	void UpdateDamageAttributes(float DamageAmount = 0,
 		EStat DamageStat = EStat::HP,
 		EDamageModifier DamageType = EDamageModifier::NONE,
 		EElement DamageElement = EElement::NONE,
 		TArray<EStatusEffect> Inflicts = TArray<EStatusEffect>(),
 		TArray<EStatusEffect> Removes = TArray<EStatusEffect>(),
+		float InnateModifier = 0.0f,
 		EAttackType AttackType = EAttackType::NONE );
 
+	/*
+	* Called from actions that require Motion Warping variable updates
+	*/
 	void UpdateMotionWarpTransform(FName WarpName = NAME_None, FVector WarpLocation = FVector::ZeroVector, FRotator WarpRotation = FRotator::ZeroRotator) const;
-	// Called to bind functionality to input
-	//virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	UFUNCTION(BlueprintCallable)
+	FTransform GetWarpTargetTransform(FName WarpName = NAME_None) const;
+	/*
+	* End Timer event for PerfectDefense
+	*/
 	UFUNCTION(BlueprintCallable)
 	void EndPerfectDefense()
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("PERFECT DEFENSE END")); 
 		PerfectDefense = false;
 		GetWorld()->GetTimerManager().ClearTimer(PerfectDefenseTimer);
 	};
 
+	/*
+	* Start Timer event for PerfectDefense
+	*/
 	UFUNCTION(BlueprintCallable)
 	void StartPerfectDefense()
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("PERFECT DEFENSE START")); 
 		PerfectDefense = true;
-		GetWorld()->GetTimerManager().SetTimer(PerfectDefenseTimer, this, &AFFYBattleCharacter::EndPerfectDefense, 0.3f, false);
+		GetWorld()->GetTimerManager().SetTimer(PerfectDefenseTimer, this, &AFFYBattleCharacter::EndPerfectDefense, 0.25f, false);
 	}
 
-	//INTERFACE ========================================:
-    // --- Widget:
-	virtual void MenuActionSelected_Implementation(AFFYAction* SelectedAction) override
-	{
-		OnActionSelected.Broadcast(SelectedAction, false, 0.f);
-	}
-	// --- Battle:
+	/*
+	* Parry event-specific logic handling
+	*/
+	UFUNCTION(BlueprintCallable)
+	void OnParry();
 
+	
 	// BP EVENTS: 
 	UFUNCTION(BlueprintImplementableEvent)
 	void DamageTakenEvent(FDamageEventResult DamageEventResult);
@@ -344,6 +381,32 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnPerfectEvade();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void EnemyKOEvent();
+	
+	//INTERFACE ========================================:
+    // --- Widget:
+	virtual void MenuActionSelected_Implementation(AFFYAction* SelectedAction) override
+	{
+		OnActionSelected.Broadcast(SelectedAction, false, 0.f);
+	}
+	// --- Battle:
+
+	virtual void EvaluateStatusEffects_Implementation() override
+	{
+		if (GetIsDead_Implementation())
+		{
+			return;
+		}
+		if (BattleCharacterStats.StatusEffects.Contains(EStatusEffect::POISON))
+		{
+			FDamageAttributes PoisonDamage = FDamageAttributes();
+			PoisonDamage.DamageAmount = FMath::Floor(BattleCharacterStats.MaxHP * 0.05f);
+			FDamageEventResult DamageEventResult = InflictDamage(PoisonDamage, BattleCharacterStats.LV, 0.0f);
+			DamageTakenEvent(DamageEventResult);
+		};
+	}
 
 	virtual bool DistanceCheck_Implementation(float Distance) override
 	{
@@ -365,8 +428,16 @@ public:
 		}
 	}
 
+	virtual bool PositionCheck_Implementation(float Distance) override
+	{
+		return (FVector::Dist2D(GetActorLocation(), DefaultTransform.GetLocation()) < Distance);
+	}
+
 	//==========================
-	
+
+
+	void PruneStatusEffects();
+
 	FDamageEventResult InflictDamage(const FDamageAttributes& SourceDamage, int SourceLevel, float CriticalModifier);
 
 	virtual bool ReceiveDamage_Implementation(AFFYBattleCharacter* Source, AFFYAction* SourceAction) override;
@@ -378,6 +449,8 @@ public:
 		return BattleCharacterStats.StatusEffects.Contains(EStatusEffect::KO);
 	}
 
+	
+
 	virtual void SetVictoryState();
 
 	bool bIsFocused = false;
@@ -385,6 +458,10 @@ public:
 	bool bVictoryState = false;
 
 	bool bQueueState = false;
+
+	bool bCanClash = false;
+
+	bool bHasClashed = false;
 
 	virtual void SetActiveState_Implementation(EActiveState NewState) override
 	{
@@ -403,6 +480,15 @@ public:
 
 	virtual void SetActionState_Implementation(EActionState NewState, bool bSetWait) override
 	{
+		if (NewState == EActionState::ACTING)
+		{
+			OnActionStarted.Broadcast();
+		}
+		if (ActionState == EActionState::ACTING && NewState != ActionState)
+		{
+			OnActionFinished.Broadcast();
+		}
+		
 		FString ActionString = UEnum::GetValueAsString(ActionState);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("%s: %s"), *BattleCharacterStats.CharacterName.ToString(), *ActionString ));
 		ActionState = NewState;
@@ -419,6 +505,16 @@ public:
 	{
 		return DamageAttributes;
 	}
+	
+
+	virtual void SetCanClash_Implementation(bool Value) override
+	{
+		bCanClash = Value;
+		if (bHasClashed)
+		{
+			bHasClashed = false;
+		}
+	}
 
 	virtual void OnStartDefendAction_Implementation(float ATBValue) override
 	{
@@ -430,11 +526,11 @@ public:
 	}
 
 	UFUNCTION(BlueprintImplementableEvent)
-	void OnBattleEffectSpawnEffect(TSubclassOf<AFFYBattleEffect> BattleEffectClass);
+	void OnBattleEffectSpawnEffect(TSubclassOf<AFFYBattleEffect> BattleEffectClass, bool bUseSocket);
 
-	virtual void BeginSpawnBattleEffect_Implementation(TSubclassOf<AFFYBattleEffect> BattleEffectClass) override
+	virtual void BeginSpawnBattleEffect_Implementation(TSubclassOf<AFFYBattleEffect> BattleEffectClass, bool bUseSocket) override
 	{
-		OnBattleEffectSpawnEffect(BattleEffectClass);
+		OnBattleEffectSpawnEffect(BattleEffectClass, bUseSocket);
 	}
 
 	virtual void TriggerBattleEffect_Implementation(int HitIndex) override
@@ -471,7 +567,7 @@ public:
 			{
 				if (a)
 				{
-					if (a->Label == ActionName && a->CanUse(this, 1) && a->CanExecute(this))
+					if (a->Label == ActionName && a->CanUse(this, 1) && a->CanExecute(this) && a->ContextCondition(this))
 					{
 						ActionContainer->ContextCommand = a;
 						OnContextCommandActivated.Broadcast(this);
@@ -543,8 +639,15 @@ public:
 
 	void QueueAction(AFFYAction* Action, const TArray<AFFYBattleCharacter*> ActionTargets)
 	{
+		if (ActorHasTag(FName("Enemy")))
+		{
+			return;
+		}
 		OnActionQueued.Broadcast(Action, this, ActionTargets);
 	}
 
-	
+	void OnClashEvent()
+	{
+		OnClash.Broadcast(this);
+	}
 };

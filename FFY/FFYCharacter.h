@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 //ext includes
+#include "FFYBattleEvents.h"
 #include "FFYCameraControls.h"
 #include "FFYInteraction.h"
 #include "Kismet/GameplayStatics.h"
@@ -35,7 +36,7 @@ enum class ECharacterState : uint8
 };
 
 UCLASS(config=Game)
-class AFFYCharacter : public ACharacter, public IFFYCameraControls, public IFFYInteraction
+class AFFYCharacter : public ACharacter, public IFFYCameraControls, public IFFYInteraction, public IFFYBattleEvents
 {
 	GENERATED_BODY()
 
@@ -109,6 +110,9 @@ protected:
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void WorldDamageEvent(bool bIsPoison);
 	
 	// To add mapping context
 	virtual void BeginPlay();

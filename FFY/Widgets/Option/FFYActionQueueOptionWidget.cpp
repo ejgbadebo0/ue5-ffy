@@ -76,7 +76,8 @@ void UFFYActionQueueOptionWidget::Queue(AFFYAction* Action, AFFYBattleCharacter*
 		UMaterialInstanceDynamic* MaterialInstance = Portrait->GetDynamicMaterial();
 		if (MaterialInstance)
 		{
-			MaterialInstance->SetTextureParameterValue("InTexture", CharacterReference->PortraitImage);
+			MaterialInstance->SetTextureParameterValue("InTexture", CharacterReference->BattleCharacterStats.Portrait);
+			MaterialInstance->SetScalarParameterValue("Offset", CharacterReference->PortraitOffset);
 		}
 		
 		if (Character && CommandTextBlock)

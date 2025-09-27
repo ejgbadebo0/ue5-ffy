@@ -125,20 +125,71 @@ void UFFYItem::Use(FItemData& Item, FBattleCharacterData& Target)
 void UFFYItem::BattleUse(FItemData& Item, AFFYBattleCharacter* User, AFFYBattleCharacter* Target)
 {
 	EItemFuncCode Code = Item.ItemFuncCode;
-	
-	FItemUseResult Result = ItemEffect(Code, Target->BattleCharacterStats);
-	//decrement even if target doesn't receive the effect
-	DecrementItem(Item);
-	//call event to display result
-	Target->OnCharacterStatsChanged.Broadcast(Target->BattleCharacterStats);
-	Target->DamageTakenEvent(FDamageEventResult(Result.bWasUsed, false, true, false, Result.Amount, Result.ResultDescription));
+	if (Item.TargetType == ETargetType::MULTI)
+	{
+		
+		TArray<AActor*> OutActors;
+		UGameplayStatics::GetAllActorsWithTag(User->GetWorld(), Target->ActorHasTag("Enemy") ? FName("Enemy") : FName("Party"), OutActors);
 
+		//decrement even if target doesn't receive the effect
+		DecrementItem(Item);
+		for (auto actor : OutActors)
+		{
+			AFFYBattleCharacter* Next = Cast<AFFYBattleCharacter>(actor);
+			if (Next != nullptr)
+			{
+				FItemUseResult Result = ItemEffect(Code, Next->BattleCharacterStats);
+				
+				//call event to display result
+				Next->OnCharacterStatsChanged.Broadcast(Next->BattleCharacterStats);
+				Next->DamageTakenEvent(FDamageEventResult(Result.bWasUsed, false, true, false, Result.Amount, Result.ResultDescription));
+				if (!Result.RemovedEffects.IsEmpty())
+				{
+					for (EStatusEffect e : Result.RemovedEffects)
+					{
+						Next->StatusRemovedEvent(e);
+					}
+				}
+				if (!Result.AddedEffects.IsEmpty())
+				{
+					for (EStatusEffect e : Result.AddedEffects)
+					{
+						Next->StatusInflictedEvent(e);
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		FItemUseResult Result = ItemEffect(Code, Target->BattleCharacterStats);
+		//decrement even if target doesn't receive the effect
+		DecrementItem(Item);
+		//call event to display result
+		Target->OnCharacterStatsChanged.Broadcast(Target->BattleCharacterStats);
+		Target->DamageTakenEvent(FDamageEventResult(Result.bWasUsed, false, true, false, Result.Amount, Result.ResultDescription));
+		if (!Result.RemovedEffects.IsEmpty())
+		{
+			for (EStatusEffect e : Result.RemovedEffects)
+			{
+				Target->StatusRemovedEvent(e);
+			}
+		}
+		if (!Result.AddedEffects.IsEmpty())
+		{
+			for (EStatusEffect e : Result.AddedEffects)
+			{
+				Target->StatusInflictedEvent(e);
+			}
+		}
+	}
 }
 
 FItemUseResult UFFYItem::ItemEffect(EItemFuncCode ItemFuncCode, FBattleCharacterData& Target)
 {
 	FItemUseResult ItemUseResult = FItemUseResult();
 	bool Result = false;
+	float RecoverValue = 0.0f;
 	
 	switch (ItemFuncCode)
 	{
@@ -147,7 +198,7 @@ FItemUseResult UFFYItem::ItemEffect(EItemFuncCode ItemFuncCode, FBattleCharacter
 			break;
 
 		case EItemFuncCode::POTION:
-			float RecoverValue = 50.f;
+			RecoverValue = 50.f;
 			ItemUseResult.Amount = RecoverValue;
 			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Green, FString::Printf(TEXT("POTION- HP: %f, MAXHP: %f"), Target.HP, Target.MaxHP));
 
@@ -155,6 +206,55 @@ FItemUseResult UFFYItem::ItemEffect(EItemFuncCode ItemFuncCode, FBattleCharacter
 			if (Result)
 			{
 				Target.HP = FMath::Min(Target.HP + RecoverValue, Target.MaxHP);
+			}
+			break;
+		
+		case EItemFuncCode::ETHER:
+			RecoverValue = 50.f;
+			ItemUseResult.Amount = RecoverValue;
+			ItemUseResult.StatChanged = EStat::MP;
+
+			Result = (Target.MP < Target.MaxMP && !Target.StatusEffects.Contains(EStatusEffect::KO));
+			if (Result)
+			{
+				Target.MP = FMath::Min(Target.MP + RecoverValue, Target.MaxMP);
+			}
+			break;
+		case EItemFuncCode::ELIXIR:
+			RecoverValue = Target.MaxHP - Target.HP;
+			ItemUseResult.Amount = RecoverValue;
+			ItemUseResult.StatChanged = EStat::HP;
+
+			Result = ( (Target.HP < Target.MaxHP || Target.MP < Target.MaxMP) && !Target.StatusEffects.Contains(EStatusEffect::KO));
+			if (Result)
+			{
+				Target.HP = Target.MaxHP;	
+				Target.MP = Target.MaxMP;
+			}
+			break;
+		case EItemFuncCode::PHOENIX:
+			RecoverValue = FMath::Floor(FMath::RandRange(1.f,FMath::Min(Target.MaxHP, 5.f)));
+			ItemUseResult.Amount = RecoverValue;
+			ItemUseResult.StatChanged = EStat::HP;
+
+			Result = Target.StatusEffects.Contains(EStatusEffect::KO);
+			if (Result)
+			{
+				Target.HP = RecoverValue;
+				Target.StatusEffects.RemoveSingle(EStatusEffect::KO);
+				ItemUseResult.RemovedEffects.Emplace(EStatusEffect::KO);
+			}
+			break;
+		case EItemFuncCode::ANTIDOTE:
+			RecoverValue = 0.0f;
+			ItemUseResult.Amount = RecoverValue;
+			ItemUseResult.StatChanged = EStat::HP;
+
+			Result = Target.StatusEffects.Contains(EStatusEffect::POISON);
+			if (Result)
+			{
+				Target.StatusEffects.RemoveSingle(EStatusEffect::POISON);
+				ItemUseResult.RemovedEffects.Emplace(EStatusEffect::POISON);
 			}
 			break;
 			

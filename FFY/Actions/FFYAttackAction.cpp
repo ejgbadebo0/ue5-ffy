@@ -43,7 +43,7 @@ void AFFYAttackAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AF
 	FVector EnemyFront = Targets[0]->GetActorLocation() + (Targets[0]->GetActorForwardVector() * 150.f) ;
 	ActionOwner->UpdateMotionWarpTransform("TargetAttackWarp",
 		EnemyFront,
-		UKismetMathLibrary::FindLookAtRotation(ActionOwner->GetActorLocation(), Targets[0]->GetActorLocation())
+		FRotator(0.0f, UKismetMathLibrary::FindLookAtRotation(ActionOwner->GetActorLocation(), Targets[0]->GetActorLocation()).Yaw, 0.0f)
 		);
 	ActionOwner->UpdateMotionWarpTransform("EndAttackWarp",
 		ActionOwner->DefaultTransform.GetLocation(),
@@ -56,6 +56,7 @@ void AFFYAttackAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AF
 		ActionOwner->Infusion,
 		TArray<EStatusEffect>(),
 		TArray<EStatusEffect>(),
+		0.0f,
 		InAttackType);
 
 	//DebugLocations(Targets[0]->GetActorLocation(), (Targets[0]->GetActorForwardVector() * 150.f), ActionOwner->GetActorLocation(), ActionOwner->GetActorForwardVector() * 150.f);
@@ -119,6 +120,7 @@ void AFFYAttackAction::Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharac
 		ActionOwner->Infusion,
 		TArray<EStatusEffect>(),
 		TArray<EStatusEffect>(),
+		0.0f,
 		InAttackType);
 
 	//Deal Damage
