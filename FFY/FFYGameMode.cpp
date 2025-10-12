@@ -84,6 +84,8 @@ void AFFYGameMode::BeginPlay()
 		CharacterReference = PlayerActor;
 		InitSceneCameras();
 		InitPlayerTransform(GameInstance->PlayerPreBattleInfo.LoadTransform, GameInstance->PlayerPreBattleInfo.LastPlayerTransform);
+		FMusicData MusicData = GetDefaultMusicData_Implementation();
+		GameInstance->PlayMusic_Implementation(MusicData);
 	}
 	
 }
@@ -116,4 +118,34 @@ void AFFYGameMode::SetActiveViewTarget(AActor* Camera)
 			}
 		}
 	}
+}
+
+FMusicData AFFYGameMode::GetDefaultMusicData_Implementation()
+{
+	FMusicData MusicDataResult = FMusicData();
+	if (!(MapMusicTableHandle.IsNull()))
+	{
+		FString LevelName = UGameplayStatics::GetCurrentLevelName(GetWorld(), true);
+		FName ID = FName(*LevelName);
+		
+		FMusicData* MapMusicData = MapMusicTableHandle.DataTable->FindRow<FMusicData>(ID, "", true);
+		if (MapMusicData != nullptr)
+		{
+			MusicDataResult.MusicTrack = MapMusicData->MusicTrack;
+			MusicDataResult.LoopStartTime = MapMusicData->LoopStartTime;
+			MusicDataResult.LoopEndPercent = MapMusicData->LoopEndPercent;
+		}
+		else
+		{
+			MapMusicData = MapMusicTableHandle.DataTable->FindRow<FMusicData>(FName("OverworldDefault"), "", true);
+			if (MapMusicData != nullptr)
+			{
+				MusicDataResult.MusicTrack = MapMusicData->MusicTrack;
+				MusicDataResult.LoopStartTime = MapMusicData->LoopStartTime;
+				MusicDataResult.LoopEndPercent = MapMusicData->LoopEndPercent;
+			}
+		}
+	}
+
+	return MusicDataResult;
 }

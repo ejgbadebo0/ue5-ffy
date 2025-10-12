@@ -9,7 +9,7 @@ AFFYFireAction::AFFYFireAction()
 {
 	Label = "Fire";
 	Description = FText::FromString("Deal a small amount of Fire damage to a target.");
-	Type = 0;
+	Type = 3;
 	TargetType = ETargetType::BOTH;
 	ActionType = EActionType::MAGIC;
 	bIsDefaultTargetEnemy = true;
@@ -24,7 +24,6 @@ AFFYFireAction::AFFYFireAction()
 
 float AFFYFireAction::GetCalculatedActionValue(AFFYBattleCharacter* ActionOwner)
 {
-	
 	return FMath::Floor(Rank * ((FMath::Square(ActionOwner->BattleCharacterStats.Magic))/6 + Rank)/4 );
 }
 

@@ -32,5 +32,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void SetSaveState(FName ID, uint8 State);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void FullHeal();
 	
 };

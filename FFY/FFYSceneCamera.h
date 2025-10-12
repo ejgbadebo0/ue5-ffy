@@ -72,6 +72,7 @@ public:
 	FVector GetLerpLocationAtDistanceAlongSpline();
 
 	//need a function to update the player ref
+	UFUNCTION(BlueprintCallable)
 	void UpdatePlayer(AFFYCharacter* Player);
 
 	//INTERFACE:

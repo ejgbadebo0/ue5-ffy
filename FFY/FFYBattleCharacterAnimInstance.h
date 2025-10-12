@@ -116,6 +116,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
 	bool bUpperBodyMontage = false;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
+	bool bOverrideIdleAnimation = false;
+
 public:
 	virtual void NativeInitializeAnimation() override;
 
@@ -142,4 +145,9 @@ public:
 	//INTERFACE:
 //---------------
 	virtual void PlayActionMontage_Implementation(FName Signature, bool bIsMultiTarget) override;
+
+	virtual void SetOverrideIdleAnimation_Implementation(bool bIsActive) override
+	{
+		bOverrideIdleAnimation = bIsActive;
+	}
 };

@@ -33,10 +33,5 @@ class FFY_API UFFYTriggerBattleEffectNotify : public UAnimNotify
 			GEngine->AddOnScreenDebugMessage(-1, 35.f, FColor::White, "Failed to cast battle effect");
 		}
 	}
-
-	virtual bool ShouldFireInEditor() override
-	{
-		return false;
-	}
 	
 };

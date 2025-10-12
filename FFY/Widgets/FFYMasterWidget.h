@@ -17,6 +17,8 @@ class UFFYMenuWidget;
  */
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMenuChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMenuForceQuit);
+DECLARE_MULTICAST_DELEGATE(FOnMenuDisplayed);
 
 UCLASS(Abstract)
 class FFY_API UFFYMasterWidget : public UUserWidget, public IFFYWidgetEvents
@@ -59,6 +61,10 @@ public:
 	//DELEGATE:
 	UPROPERTY(BlueprintAssignable)
 	FOnMenuChanged OnMenuChanged;
+	UPROPERTY(BlueprintAssignable)
+	FOnMenuForceQuit OnMenuForceQuit;
+	
+	FOnMenuDisplayed OnMenuDisplayed;
 	//--------
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UI)
@@ -79,6 +85,9 @@ public:
 	UFFYSelectPartyMemberWidget* GetMasterSelectionWidget();
 
 	void SetMenuMode(EMenuMode Mode) { CurrentMenuMode = Mode; };
+
+	UFUNCTION(BlueprintCallable)
+	void CallMenuDisplayed() { OnMenuDisplayed.Broadcast(); };
 
 	//INTERFACE:
 	virtual void EndSelection_Implementation() override;

@@ -25,6 +25,7 @@ class UFFYBattleWidget;
 class UFFYMenuWidget;
 class UFFYMasterWidget;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnActiveModeSwitched, EActiveState, ActiveState);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSceneDarken, bool, Active);
 
 UCLASS()
@@ -53,6 +54,8 @@ public:
 	AFFYPlayerBattleManager();
 
 	//DELEGATE:
+	UPROPERTY(BlueprintAssignable)
+	FOnActiveModeSwitched OnActiveModeSwitched;
 	UPROPERTY(BlueprintAssignable)
 	FOnSceneDarken OnSceneDarken;
 
@@ -160,7 +163,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Battle", meta = (AllowPrivateAccess = "true"))
 	FTransform DefaultTransform;
-
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Battle", meta = (AllowPrivateAccess = "true"))
 	TArray<FTransform> BattleCameraTransforms;
 
@@ -180,9 +183,12 @@ protected:
 	void Victory();
 
 	UFUNCTION()
+	void StartDefeat();
+	
+	UFUNCTION()
 	void Defeat();
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void BattleEnded();
 
 	UFUNCTION()
@@ -213,7 +219,7 @@ protected:
 	}
 
 	UFUNCTION(BlueprintCallable)
-	void ChangeDefaultTransform();
+	void ChangeDefaultTransform(bool ForceChange = false);
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -255,51 +261,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Battle", meta = (AllowPrivateAccess = "true"))
 	float CurrentChainFallOffRate = 1.f;
 
+	//all characters present
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Battle", meta = (AllowPrivateAccess = "true"))
+	TArray<FCameraActionContainer> VictoryCameraActions;
+
+	//with some characters defeated
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Battle", meta = (AllowPrivateAccess = "true"))
+	TArray<FCameraActionContainer> VictoryWCDCameraActions;
+
+	UFUNCTION()
+	virtual void AssignInitiative(); 
 	
 	UFUNCTION()
-	virtual void OnStartBattle()
-	{
-		//Set ATB to initial values based on Dexterity and rolled Initiative
-		float HighestDex = FindHighestDexterity();
-		for (auto p : Party)
-		{
-			if (p)  //bind
-			{
-				p->ATB = FMath::Clamp(100*(p->BattleCharacterStats.Dexterity/HighestDex) - (20-p->Initiative), 0, 99);
-				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Purple, FString::Printf(TEXT("%s: INITIATIVE = %f"), *p->BattleCharacterStats.CharacterName.ToString(), 100*(p->BattleCharacterStats.Dexterity/HighestDex) - (20-p->Initiative)));
-			}
-		}
-		
-		int StartingValues = 1;
-		int HighestValues = 0;
-		float AnchorATB = 0;
-		
-		for (auto e : Enemies)
-		{
-			if (e)
-			{
-				AnchorATB = FMath::Clamp(100*(e->BattleCharacterStats.Dexterity/HighestDex) + (10-e->Initiative * StartingValues), 0, 99);
-				StartingValues++;
-				if (e->BattleCharacterStats.Dexterity == HighestDex)
-				{
-					HighestValues++;
-					if (HighestValues > 1)
-					{
-						AnchorATB = FMath::Clamp(AnchorATB - (15 * (HighestValues-1)), 0, 99);
-					}
-				}
-				e->ATB = AnchorATB;
-				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString::Printf(TEXT("%s: INITIATIVE = %f"), *e->BattleCharacterStats.CharacterName.ToString(), AnchorATB));
-			}
-		}
-		
-		//Enable Battle actions
-		bHasBattleStarted = true;
-		if (BattleWidget)
-		{
-			BattleWidget->BattleStart();
-		}
-	}
+	virtual void OnStartBattle();
 
 	//INTERFACE:
 
@@ -370,15 +344,27 @@ public:
 		OnSceneDarken.Broadcast(Active); //signal to listening actors for custom behavior
 	}
 
+
+	virtual void EndIntroSequence_Implementation(FTransform CurrentSequenceTransform) override
+	{
+		OnEndIntroSequence(CurrentSequenceTransform);
+	}
+
 	//===========
 
 	//BP EVENTS:
 
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void OnCameraActionStarted(AFFYBattleCharacter* Character, FCameraActionContainer CameraActionContainer);
 
 	UFUNCTION(BlueprintImplementableEvent)
+	void OnEndIntroSequence(FTransform CurrentSequenceTransform);
+
+	UFUNCTION(BlueprintImplementableEvent)
 	void StopOngoingCameraAction();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void StartVictoryCameraAction();
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnFocusStateChanged(AFFYBattleCharacter* Character, bool bIsFocused);
@@ -388,6 +374,12 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnDarkenScene(bool Active);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnGameOver();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Audio")
+	FMusicData VictoryMusicData;
 
 	//===========
 };

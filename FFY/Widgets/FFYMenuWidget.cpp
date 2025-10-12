@@ -3,6 +3,7 @@
 
 #include "FFYMenuWidget.h"
 
+#include "FFYConfirmMenuWidget.h"
 #include "FFYMasterWidget.h"
 #include "FFYOptionWidget.h"
 #include "Components/WrapBox.h"
@@ -50,6 +51,10 @@ void UFFYMenuWidget::NativeDestruct()
 	if (GetSelectionWidget())
 	{
 		EndSelection_Implementation();
+	}
+	if (GetConfirmWidget())
+	{
+		EndConfirmation_Implementation(false, false);
 	}
 	Super::NativeDestruct();
 }
@@ -102,6 +107,11 @@ void UFFYMenuWidget::CycleContextIndex(int DeltaIndex)
 			LoadContext_Implementation(GameInstance->GetParty()[ContextIndex].PartyCharacterData.CharacterName);
 		}
 	}
+}
+
+UFFYConfirmMenuWidget* UFFYMenuWidget::GetConfirmWidget_Implementation()
+{
+	return nullptr;
 }
 
 UFFYSelectPartyMemberWidget* UFFYMenuWidget::GetSelectionWidget_Implementation()
@@ -208,6 +218,66 @@ void UFFYMenuWidget::StartSelection_Implementation(UFFYOptionWidget* SelectedOpt
 	else
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, "UNABLE TO FIND SELECTION MENU");
+	}
+}
+
+void UFFYMenuWidget::EndConfirmation_Implementation(bool bIsConfirmed, bool bShouldExitMenu)
+{
+	if (CurrentMenuMode == EMenuMode::CONFIRMING)
+	{
+		CurrentOption->Flicker_Implementation(false);
+		SetMenuMode(EMenuMode::NONE);
+		UFFYConfirmMenuWidget* ConfirmWidget = GetConfirmWidget(); 
+		//Execute custom logic for selected option and GameInstance
+		if (bIsConfirmed)
+		{
+			IFFYWidgetEvents* Option = Cast<IFFYWidgetEvents>(CurrentOption);
+			if (Option)
+			{
+				Option->ContextAction_Implementation(nullptr, false);	
+			}
+			IFFYWidgetEvents* GameInstance = Cast<IFFYWidgetEvents>(GetGameInstance());
+			if (GameInstance && ConfirmWidget)
+			{
+				GameInstance->StartConfirmation_Implementation(ConfirmWidget->ConfirmCallback);
+				ConfirmWidget->SetConfirmCallback(NAME_None);
+			}
+		}
+		//minimize
+		if (ConfirmWidget && ConfirmWidget->IsVisible())
+		{
+			ConfirmWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		//close Widget if should exit
+		if (bShouldExitMenu && (GetOwnerMaster() != nullptr))
+		{
+			GetOwnerMaster()->OnMenuForceQuit.Broadcast();
+		}
+	}
+}
+
+void UFFYMenuWidget::StartConfirmation_Implementation(FName CallbackName)
+{
+	if (GetConfirmWidget() != nullptr)
+	{
+		CurrentOption->Flicker_Implementation(true);
+		SetMenuMode(EMenuMode::CONFIRMING);
+		
+		UFFYConfirmMenuWidget* ConfirmWidget = GetConfirmWidget();
+		ConfirmWidget->SetConfirmCallback(CallbackName);
+		ConfirmWidget->SetVisibility(ESlateVisibility::Visible);
+		if (ConfirmWidget->Options.Num() > 0)
+		{
+			ConfirmWidget->GetOptions()[0]->OnSelected();
+		}
+	}
+}
+
+void UFFYMenuWidget::SetConfirmMenuText_Implementation(const FText& Text)
+{
+	if (GetConfirmWidget() != nullptr)
+	{
+		GetConfirmWidget()->SetConfirmMenuText_Implementation(Text);
 	}
 }
 

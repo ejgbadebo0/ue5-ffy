@@ -23,7 +23,7 @@ class FFY_API IFFYCameraControls
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-
+	
 	virtual void SetActiveCamera(UCameraComponent* Camera);
 
 	virtual void SetActiveViewTarget(AActor* Camera);
@@ -42,4 +42,10 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void DarkenScene(bool Active);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	bool GetCameraControlRotationDefault();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void SetActiveViewTargetBP(AActor* Camera);
 };

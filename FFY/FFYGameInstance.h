@@ -10,6 +10,7 @@
 #include "FFYBattleEvents.h"
 #include "FFYWidgetEvents.h"
 #include "FFYCharacter.h"
+#include "FFYMusicEvents.h"
 #include "FFYSaveDataEvents.h"
 #include "FFYTransitions.h"
 #include "Engine/GameInstance.h"
@@ -71,7 +72,7 @@ struct FFY_API FPlayerPreBattleInfo
  *  Main game class, holds party info/progress.
  */
 UCLASS(BlueprintType, Blueprintable)
-class FFY_API UFFYGameInstance : public UGameInstance, public IFFYTransitions, public IFFYBattleEvents, public IFFYWidgetEvents, public IFFYSaveDataEvents
+class FFY_API UFFYGameInstance : public UGameInstance, public IFFYTransitions, public IFFYBattleEvents, public IFFYWidgetEvents, public IFFYSaveDataEvents, public IFFYMusicEvents
 {
 	GENERATED_BODY()
 
@@ -83,6 +84,12 @@ class FFY_API UFFYGameInstance : public UGameInstance, public IFFYTransitions, p
 
 	UPROPERTY(EditAnywhere)
 	FText PlayTime;
+
+	UPROPERTY(VisibleAnywhere)
+	FName CallbackFunctionName;
+
+	UPROPERTY(VisibleAnywhere)
+	FMusicData CurrentMusicData;
 
 public:
 	//DELEGATES:
@@ -101,7 +108,8 @@ public:
 
 	void EvaluateEncounter(float BattleCounter);
 
-	void StartEncounter();
+	UFUNCTION(BlueprintCallable)
+	void StartEncounter(FName BattleMapOverride = NAME_None);
 
 	void EndEncounter();
 
@@ -150,6 +158,8 @@ public:
 	TMap<FName, uint8> ActorSaveData; 
 	
 	FTimerHandle PlayTimeHandle;
+
+	FTimerHandle AudioInitializeHandle;
 	
 	UFUNCTION(BlueprintCallable)
 	void ElapsePlayTime();
@@ -176,6 +186,8 @@ public:
 		ActorSaveData.Add(ItemID, State);
 	}
 
+	UFUNCTION(BlueprintCallable, Category="Audio")
+	void InitializeMusicPlayer();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (RowType = "BattleCharacterData"))
 	FDataTableRowHandle PartyTableHandle;
@@ -188,6 +200,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (RowType = "BattleLevelMap"))
 	FDataTableRowHandle BattleMapTableHandle;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="Audio")
+	UAudioComponent* AudioComponent;
 
 	UFUNCTION(BlueprintCallable)
 	void InitializeBattleMap();
@@ -205,6 +220,9 @@ public:
 	bool bHasEncounters = false;
 
 	bool bIsLoadingMap = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	bool bIsLoadingAudioPlayback = false;
 	
 	FBattleLevelMap BattleLevelMapInfo;
 
@@ -220,7 +238,17 @@ public:
 	void StartTransition_Implementation(FName Signature) override;
 
 	void EndTransition_Implementation(FName Signature) override;
-	
+
+	virtual void FullHeal_Implementation() override
+	{
+		for (auto &p : GetParty())
+		{
+			p.PartyCharacterData.HP = p.PartyCharacterData.MaxHP;
+			p.PartyCharacterData.MP = p.PartyCharacterData.MaxMP;
+			p.PartyCharacterData.StatusEffects.Empty();
+		}
+	}
+
 	virtual void UpdatePartyMemberStats_Implementation(FBattleCharacterData CharacterData) override;
 
 	virtual void
@@ -293,5 +321,38 @@ public:
 			OnWorldDamage.Broadcast(Result);
 		}
 	}
+
+	virtual FName GetConfirmCallbackName_Implementation() override
+	{
+		FName Return = CallbackFunctionName;
+		CallbackFunctionName = NAME_None;
+		return Return;
+	}
+
+	virtual void StartConfirmation_Implementation(FName CallbackName) override
+	{
+		CallbackFunctionName = CallbackName;
+	}
+
+	virtual void OverrideCurrentTrack_Implementation(USoundCue* NewTrack, float LoopStartTime, float LoopEndTime) override;
+
+	UFUNCTION()
+	void LoopPlayback(const USoundWave* PlayingSoundWave, const float PlaybackPercent);
+
+	UFUNCTION()
+	void OnLoopPlaybackTriggered();
+	
+	virtual void PlayMusic_Implementation(FMusicData MusicData) override;
+	
+	virtual void StopMusic_Implementation(float FadeOutDuration) override;
+
+	//BP EVENTS:
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void BindAudioPlayback();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void UnbindAudioPlayback();
+	//=============
 };
 

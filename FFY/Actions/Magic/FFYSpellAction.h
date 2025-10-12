@@ -19,5 +19,5 @@ public:
 	virtual void ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattleCharacter*> Targets) override;
 	virtual void ExecuteAction(FBattleCharacterData& ActionOwner, TArray<FBattleCharacterData>& Targets) override;
 	virtual void ExecuteAction(FBattleCharacterData& ActionOwner, FBattleCharacterData& Target) override;
-	virtual void DebugLocations(FVector Location1, FVector Normal1, FVector Location2, FVector Normal2) override;
+	virtual void DebugLocations(FVector Location1, FVector Normal1, FVector Location2, FVector Normal2, bool DrawSpheres = false) override;
 };

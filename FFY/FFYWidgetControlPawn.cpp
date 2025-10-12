@@ -5,12 +5,10 @@
 //ext includes
 #include <string>
 
-#include "AudioMixerDevice.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "FFYCharacter.h"
 #include "FFYDataEnums.h"
-#include "AssetTypeActions/AssetDefinition_SoundBase.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values
@@ -82,6 +80,7 @@ void AFFYWidgetControlPawn::Cancel(const FInputActionValue& Value)
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("CANCEL"));
 	if (PauseWidget)
 	{
+		IFFYWidgetEvents* PauseWidgetInterface = Cast<IFFYWidgetEvents>(PauseWidget);
 		switch (PauseWidget->GetCurrentMenuMode())
 		{
 			default:
@@ -90,12 +89,16 @@ void AFFYWidgetControlPawn::Cancel(const FInputActionValue& Value)
 				PauseWidget->PreviousMenu();
 				break;
 			case EMenuMode::SELECTING:
-				IFFYWidgetEvents* PauseWidgetInterface = Cast<IFFYWidgetEvents>(PauseWidget);
 				if (PauseWidgetInterface)
 				{
 					PauseWidgetInterface->EndSelection_Implementation();
 				}
 				break;
+			case EMenuMode::CONFIRMING:
+				if (PauseWidgetInterface)
+				{	
+					PauseWidgetInterface->EndConfirmation_Implementation(false, false);
+				}
 		}
 		
 	}

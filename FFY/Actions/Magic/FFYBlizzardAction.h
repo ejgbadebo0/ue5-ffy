@@ -13,5 +13,11 @@ UCLASS()
 class FFY_API AFFYBlizzardAction : public AFFYSpellAction
 {
 	GENERATED_BODY()
+
+	AFFYBlizzardAction();
 	
+public:
+		
+	virtual float GetCalculatedActionValue(AFFYBattleCharacter* ActionOwner) override;
+	virtual void Effect(AFFYBattleCharacter* ActionOwner, AFFYBattleCharacter* Target, int HitIndex) override;
 };

@@ -101,7 +101,7 @@ FVector AFFYSceneCamera::GetLerpLocationAtDistanceAlongSpline()
 		for (float IterateDistance = 0; IterateDistance <= MaxSplineDistance; IterateDistance += CheckOffset)
 		{
 			FVector CheckLocation = SplineComponent->GetLocationAtDistanceAlongSpline(IterateDistance, ESplineCoordinateSpace::World);
-			float CheckDistance = FVector::Distance(CheckLocation, PlayerCharacter->GetActorLocation());
+			float CheckDistance = FMath::Max(0, FVector::Distance(CheckLocation, PlayerCharacter->GetActorLocation()) - ViewOffset);
 			if (CheckDistance < ClosestDistance)
 			{
 				ClosestDistance = CheckDistance;

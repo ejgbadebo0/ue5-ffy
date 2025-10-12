@@ -10,15 +10,28 @@
 #include "FFY/FFYAction.h"
 #include "FFY/FFYActionContainer.h"
 #include "FFY/FFYGameInstance.h"
+#include "FFY/Widgets/FFYConfirmMenuWidget.h"
+
+
 
 void UFFYMagicMenuWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	if (GetConfirmWidget() != nullptr)
+	{
+		GetConfirmWidget()->OnConfirmOptionSelected.AddUniqueDynamic(this, &UFFYMagicMenuWidget::OnConfirmOptionSelected);
+	}
 }
 
 void UFFYMagicMenuWidget::NativeDestruct()
 {
 	Super::NativeDestruct();
+}
+
+void UFFYMagicMenuWidget::OnConfirmOptionSelected(bool bIsConfirmed)
+{
+	EndConfirmation_Implementation(bIsConfirmed, bIsConfirmed);
 }
 
 void UFFYMagicMenuWidget::LoadContext_Implementation(FName ContextName)
@@ -89,6 +102,11 @@ void UFFYMagicMenuWidget::LoadContext_Implementation(FName ContextName)
 UFFYSelectPartyMemberWidget* UFFYMagicMenuWidget::GetSelectionWidget_Implementation()
 {
 	return SelectionWidget;
+}
+
+UFFYConfirmMenuWidget* UFFYMagicMenuWidget::GetConfirmWidget_Implementation()
+{
+	return ConfirmMenuWidget;
 }
 
 void UFFYMagicMenuWidget::ContextRefresh_Implementation(int Index)

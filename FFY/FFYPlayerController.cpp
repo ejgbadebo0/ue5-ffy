@@ -3,11 +3,18 @@
 
 #include "FFYPlayerController.h"
 
+#include "GameFramework/GameMode.h"
+#include "FFYCameraControls.h"
 #include "FFYTransitions.h"
+
 
 void AFFYPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+
+	//IFFYCameraControls* GameMode = Cast<IFFYCameraControls>(GetWorld()->GetAuthGameMode());
+	//bAutoManageActiveCameraTarget = (GameMode) ? GameMode->GetCameraControlRotationDefault_Implementation() : true;
+	
 	//OnPossessedPawnChanged.AddUniqueDynamic(this, &AFFYPlayerController::CallOnPossessed);
 	
 }

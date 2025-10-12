@@ -46,7 +46,7 @@ void UFFYGambitComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
  * If more than one gambit returns true, sort based on priority and randomly select
  * from the highest priority gambits.
  */
-void UFFYGambitComponent::EvaluateGambits(float ATBValue) //weird behavior with 
+void UFFYGambitComponent::EvaluateGambits(float ATBValue) 
 {
 	if (ATBValue >= 100.f)
 	{
@@ -54,80 +54,112 @@ void UFFYGambitComponent::EvaluateGambits(float ATBValue) //weird behavior with
 		
 		if (!Gambits.IsEmpty())
 		{
-			for (auto Gambit : Gambits)
+			for (int i = 0; i < Gambits.Num(); i++)
 			{
-				//1: determine if gambit can be performed
-				if ((!Gambit.EvaluateOnce || LastSelection != Gambit.ActionName))
+				//1: determine if gambit can be evaluated
+				if (Gambits[i].MaxCooldown >= 0) 
 				{
-					//2: find targets for gambit action
-					TArray<AFFYBattleCharacter*> Targets;
-					if (Gambit.TargetClass == ETargetClass::SELF)
+					if (Gambits[i].EvaluateCooldown > 0)
 					{
-						if (ValidGambitConditions(OwnerCharacter, Gambit))
-						{
-							Targets.Emplace(OwnerCharacter);
-						}
+						Gambits[i].EvaluateCooldown--;
 					}
 					else
 					{
-						TArray<AActor*> OutActors;
-
-						switch (Gambit.TargetClass)
+						//2: find targets for gambit action ===========================
+						TArray<AFFYBattleCharacter*> Targets;
+						bool bTargetAll; 
+						switch (Gambits[i].TargetType)
 						{
-						case ETargetClass::NONE:
-							UGameplayStatics::GetAllActorsOfClass(GetWorld(), TSubclassOf<AFFYBattleCharacter>(), OutActors);
-							break;
-						case ETargetClass::PARTY:
-							UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Party"), OutActors);
-							break;
-						case ETargetClass::ENEMY:
-							UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Enemy"), OutActors);
-							break;
-						case ETargetClass::RANDOM:
-							UGameplayStatics::GetAllActorsOfClass(GetWorld(), TSubclassOf<AFFYBattleCharacter>(), OutActors);
-							break;
+							default:
+								bTargetAll = false;
+								break;
+							case ETargetType::SINGLE:
+								bTargetAll = false;
+								break;
+							case ETargetType::MULTI:
+								bTargetAll = true;
+								break;
+							case ETargetType::BOTH:
+								bTargetAll = FMath::RandBool();
 						}
-						//3: Evaluate Gambit conditions: 
-						for (AActor* Actor : OutActors)
+
+						if (Gambits[i].TargetClass == ETargetClass::SELF)
 						{
-							AFFYBattleCharacter* Character = Cast<AFFYBattleCharacter>(Actor);
-							if (Character)
+							if (ValidGambitConditions(OwnerCharacter, Gambits[i]))
 							{
-								//check if we want KO'd characters to be selectable and evaluate each member to see if they meet gambit conditions
-								if ( (!Gambit.bFilterDead || (Gambit.bFilterDead && !Character->BattleCharacterStats.StatusEffects.Contains(EStatusEffect::KO))) && ValidGambitConditions(Character, Gambit) )
-								{
-									Targets.Emplace(Character);
-								}
-								
+								Targets.Emplace(OwnerCharacter);
 							}
 						}
-					}
-
-					//4: Select a valid target
-					bool Result = false;
-					//resize array if not targeting all entities
-					if (Targets.Num() > 0)
-					{
-						if (!Gambit.bTargetAll)
+						else
 						{
-							int TargetIndex = FMath::RandRange(0, Targets.Num() - 1);
-							AFFYBattleCharacter* Target = Targets[TargetIndex];
-							Targets.Empty(); 
-							Targets.Emplace(Target);
-							Result = true;
+							TArray<AActor*> OutActors;
+
+							switch (Gambits[i].TargetClass)
+							{
+							case ETargetClass::NONE:
+								UGameplayStatics::GetAllActorsOfClass(GetWorld(), TSubclassOf<AFFYBattleCharacter>(), OutActors);
+								break;
+							case ETargetClass::PARTY:
+								UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Party"), OutActors);
+								break;
+							case ETargetClass::ENEMY:
+								UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Enemy"), OutActors);
+								break;
+							case ETargetClass::RANDOM:
+								UGameplayStatics::GetAllActorsOfClass(GetWorld(), TSubclassOf<AFFYBattleCharacter>(), OutActors);
+								break;
+							}
+							//3: Evaluate Gambit conditions: 
+							for (AActor* Actor : OutActors)
+							{
+								AFFYBattleCharacter* Character = Cast<AFFYBattleCharacter>(Actor);
+								if (Character)
+								{
+									//check if we want KO'd characters to be selectable and evaluate each member to see if they meet gambit conditions
+									if ( (!Gambits[i].bFilterDead || (Gambits[i].bFilterDead && !Character->BattleCharacterStats.StatusEffects.Contains(EStatusEffect::KO))) && ValidGambitConditions(Character, Gambits[i]) )
+									{
+										Targets.Emplace(Character);
+									}
+								}
+							}
 						}
+
+						//4: Select a valid target
+						bool Result = false;
+						//resize array if not targeting all entities
+						if (Targets.Num() > 0)
+						{
+							if (!bTargetAll)
+							{
+								int TargetIndex = FMath::RandRange(0, Targets.Num() - 1);
+								AFFYBattleCharacter* Target = Targets[TargetIndex];
+								Targets.Empty(); 
+								Targets.Emplace(Target);
+								Result = true;
+							}
+						
 						else
 						{
 							Result = true;
 						}
 					}
 					
-					//5: If Gambit conditions are valid, select and break loop
-					if (Result)
-					{
-						ConfirmGambit(Gambit, Targets);
-						break;
+						//5: If Gambit conditions are valid, select and break loop
+						if (Result)
+						{
+							if (Gambits[i].EvaluateOnce) 
+							{
+								Gambits[i].MaxCooldown = -1; 
+							}
+							else
+							{
+								Gambits[i].EvaluateCooldown = Gambits[i].MaxCooldown;
+							}
+							ConfirmGambit(Gambits[i], Targets);
+							break;
+						}
 					}
+					
 					//========================================================
 				}
 			}
@@ -144,19 +176,39 @@ void UFFYGambitComponent::EvaluateGambits(float ATBValue) //weird behavior with
 bool UFFYGambitComponent::ValidGambitConditions(AFFYBattleCharacter* Target, FGambit& Gambit)
 {
 	bool Result = true;
-	// Target HP Floor
+	// HP Floor
 	if (Gambit.HPRatioFloor > 0.f)
 	{
-		if((Target->BattleCharacterStats.HP/Target->BattleCharacterStats.MaxHP) < Gambit.HPRatioFloor)
+		if((OwnerCharacter->BattleCharacterStats.HP/OwnerCharacter->BattleCharacterStats.MaxHP) < Gambit.HPRatioFloor)
 		{
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("%s - GAMBIT SKIP: HP not high enough"), *Gambit.ActionName.ToString()));
+			Result = false;
+		}
+	}
+	// HP Limit
+	if (Gambit.HPRatioLimit > 0.f)
+	{
+		if((OwnerCharacter->BattleCharacterStats.HP/OwnerCharacter->BattleCharacterStats.MaxHP) > Gambit.HPRatioLimit)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("%s - GAMBIT SKIP: HP too high"), *Gambit.ActionName.ToString()));
+			Result = false;
+		}
+	}
+	// Target HP Floor
+	if (Gambit.TargetHPRatioFloor > 0.f)
+	{
+		if((Target->BattleCharacterStats.HP/Target->BattleCharacterStats.MaxHP) < Gambit.TargetHPRatioFloor)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("%s - GAMBIT SKIP: Target's HP not high enough"), *Gambit.ActionName.ToString()));
 			Result = false;
 		}
 	}
 	//Target HP Limit
-	if (Gambit.HPRatioLimit > 0.f)
+	if (Gambit.TargetHPRatioLimit > 0.f)
 	{
-		if((Target->BattleCharacterStats.HP/Target->BattleCharacterStats.MaxHP) > Gambit.HPRatioLimit)
+		if((Target->BattleCharacterStats.HP/Target->BattleCharacterStats.MaxHP) > Gambit.TargetHPRatioLimit)
 		{
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("%s - GAMBIT SKIP: Target's HP too high"), *Gambit.ActionName.ToString()));
 			Result = false;
 		}
 	}
@@ -165,6 +217,7 @@ bool UFFYGambitComponent::ValidGambitConditions(AFFYBattleCharacter* Target, FGa
 	{
 		if ((OwnerCharacter->BattleCharacterStats.MP/OwnerCharacter->BattleCharacterStats.MaxMP) < Gambit.MPRatioFloor)
 		{
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("%s - GAMBIT SKIP: MP too low"), *Gambit.ActionName.ToString()));
 			Result = false;
 		}
 	}
@@ -173,6 +226,7 @@ bool UFFYGambitComponent::ValidGambitConditions(AFFYBattleCharacter* Target, FGa
 	{
 		if ((OwnerCharacter->BattleCharacterStats.MP/OwnerCharacter->BattleCharacterStats.MaxMP) > Gambit.MPRatioLimit)
 		{
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("%s - GAMBIT SKIP: MP too high"), *Gambit.ActionName.ToString()));
 			Result = false;
 		}
 	}
@@ -183,6 +237,7 @@ bool UFFYGambitComponent::ValidGambitConditions(AFFYBattleCharacter* Target, FGa
 		UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Enemy"), OutEnemies);
 		if (OutEnemies.Num() < Gambit.NumEnemies)
 		{
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("%s - GAMBIT SKIP: Too few enemies"), *Gambit.ActionName.ToString()));
 			Result = false;
 		}
 	}
@@ -205,6 +260,7 @@ bool UFFYGambitComponent::ValidGambitConditions(AFFYBattleCharacter* Target, FGa
 		}
 		if (Total < Gambit.NumAllies)
 		{
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("%s - GAMBIT SKIP: Too few party members"), *Gambit.ActionName.ToString()));
 			Result = false;
 		}
 	}
@@ -220,6 +276,6 @@ void UFFYGambitComponent::ConfirmGambit(FGambit Gambit, TArray<AFFYBattleCharact
 	FString Name = OwnerCharacter->GetName();
 	FString TName = Targets[0]->GetName();
 	FString AName = Gambit.ActionName.ToString();
-	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("GAMBIT: %s uses %s on %s "), *Name, *AName, *TName));
+	GEngine->AddOnScreenDebugMessage(-1, 20.0f, FColor::White, FString::Printf(TEXT("GAMBIT: %s uses %s on %s "), *Name, *AName, *TName));
 }
 

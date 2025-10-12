@@ -5,20 +5,21 @@
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FFYDataEnums.h"
-//#include "FFYAction.h"
-#include "CoreMinimal.h"
 #include "FFYItemDataStructs.h"
 
 #include "FFYDataStructures.generated.h"
 
-
+class ALevelSequenceActor;
+class ULevelSequence;
 class AFFYBattleCharacter;
 class AFFYAction;
+class USoundCue;
 /**
  * 
  */
 class FFY_API FFYDataStructures
 {
+	
 public:
 	FFYDataStructures();
 	~FFYDataStructures();
@@ -180,7 +181,7 @@ USTRUCT(BlueprintType)
 struct FFY_API FBattleEXPData
 {
 
-	GENERATED_BODY()
+	GENERATED_BODY();
 
 	//used for display in menus
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
@@ -222,7 +223,7 @@ struct FFY_API FBattleEXPData
 USTRUCT(BlueprintType)
 struct FFY_API FCameraActionData
 {
-	GENERATED_BODY()
+	GENERATED_BODY();
 
 	//Total duration allowed for camera cut
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -248,6 +249,10 @@ struct FFY_API FCameraActionData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	ECameraTargetType EndCameraTargetType = ECameraTargetType::NONE;
 
+	//if CameraTargetType is set to target, will use the target at which index this value returns if valid
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int TargetIndex = 0;
+
 	//if focusing on specific bone socket on target
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FName SocketName = NAME_None;
@@ -260,11 +265,15 @@ struct FFY_API FCameraActionData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FVector RelativeEndLocation = FVector::ZeroVector;
 
-	//used when CameraTargetType is none
+	//relative to target denoted by EndCameraTargetType, if non-zero Camera will follow quadratic curve between Mid and End location
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector RelativeMidLocation = FVector::ZeroVector;
+
+	//offset from target rotation of start target
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FRotator CustomStartRotation = FRotator::ZeroRotator;
 
-	//used when CameraTargetType is none
+	//offset from target rotation of end target
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FRotator CustomEndRotation = FRotator::ZeroRotator;
 
@@ -275,12 +284,16 @@ struct FFY_API FCameraActionData
 	//if 0, will not affect camera zoom
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float EndZoomOffset = 0.f;
+
+	//if non-zero, target's capsule radius being larger than this number will add it to zoom offset
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float TargetCapsuleRadiusThreshold = 0.f;
 };
 
 USTRUCT(BlueprintType)
 struct FFY_API FCameraActionContainer
 {
-	GENERATED_BODY()
+	GENERATED_BODY();
 
 	//current CameraActions will be overriden by others with higher values
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -297,4 +310,28 @@ struct FFY_API FCameraActionContainer
 	//set of data structs for a complete CameraAction
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FCameraActionData> CameraActions;
+};
+
+USTRUCT(BlueprintType)
+struct FFY_API FBattleMapSequence : public FTableRowBase
+{
+	GENERATED_BODY();
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<TSoftObjectPtr<ULevelSequence>> LevelSequences;
+};
+
+USTRUCT(BlueprintType)
+struct FFY_API FMusicData : public FTableRowBase
+{
+	GENERATED_BODY();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USoundCue* MusicTrack;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float LoopStartTime = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float LoopEndPercent = -1.f;
 };

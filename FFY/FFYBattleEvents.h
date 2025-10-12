@@ -74,6 +74,9 @@ public:
 	void StartCameraAction(FCameraActionContainer CameraActionContainer);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void EndIntroSequence(FTransform CurrentSequenceTransform); 
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void UseInventoryItem(FName ID, AFFYBattleCharacter* Source, AFFYBattleCharacter* Target);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)

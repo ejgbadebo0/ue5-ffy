@@ -13,8 +13,9 @@
 #include "FFYAction.h"
 #include "FFYActionContainer.h"
 #include "FFYBattleCharacter.h"
-#include "EntitySystem/MovieSceneEntitySystemRunner.h"
-#include "UniversalObjectLocators/UniversalObjectLocatorUtils.h"
+#include "GameFramework/GameModeBase.h"
+#include "Components/AudioComponent.h"
+#include "Sound/SoundCue.h"
 //-------
 void UFFYGameInstance::Init()
 {
@@ -23,6 +24,7 @@ void UFFYGameInstance::Init()
 	//AFFYGameMode* GameMode = Cast<AFFYGameMode>(GetWorld()->GetAuthGameMode());
 
 	GetWorld()->GetTimerManager().SetTimer(PlayTimeHandle, this, &UFFYGameInstance::ElapsePlayTime, 1.f, true, -1.f);
+	//GetWorld()->GetTimerManager().SetTimer(AudioInitializeHandle, this, &UFFYGameInstance::InitializeMusicPlayer, 0.5f, false, -1);
 	
 	TArray<FBattleCharacterData*> CharacterData;
 	PartyTableHandle.DataTable->GetAllRows("", CharacterData);
@@ -135,7 +137,7 @@ void UFFYGameInstance::EvaluateEncounter(float BattleCounter)
 	}
 }
 
-void UFFYGameInstance::StartEncounter()
+void UFFYGameInstance::StartEncounter(FName BattleMapOverride)
 {
 	APlayerCameraManager* CameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
 	if (CameraManager)
@@ -153,7 +155,7 @@ void UFFYGameInstance::StartEncounter()
 			StartTransition_Implementation("Battle");
 			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Blue, TEXT("START ENCOUNTER VALID"));	
 
-			UGameplayStatics::OpenLevel(GetWorld(), BattleLevelMapInfo.BattleMapName, true);
+			UGameplayStatics::OpenLevel(GetWorld(), (BattleMapOverride != NAME_None) ? BattleMapOverride : BattleLevelMapInfo.BattleMapName, true);
 			bIsLoadingMap = false;
 		}
 	}
@@ -262,6 +264,28 @@ void UFFYGameInstance::AddToInventory(FItemData InventoryItem, int32 Amount)
 	OnInventoryUpdated.Broadcast();
 }
 
+void UFFYGameInstance::InitializeMusicPlayer()
+{
+	AGameModeBase* GameMode = GetWorld()->GetAuthGameMode();
+	if (GameMode)
+	{
+		IFFYMusicEvents* MusicGameMode = Cast<IFFYMusicEvents>(GameMode);
+		if (MusicGameMode)
+		{
+			FMusicData MusicData = MusicGameMode->GetDefaultMusicData_Implementation();
+		
+			AudioComponent = UGameplayStatics::SpawnSound2D(GetWorld(),
+				MusicData.MusicTrack,
+				1,
+				1.f,
+				0,
+				nullptr,
+				true,
+				false);
+		}
+	}
+}
+
 void UFFYGameInstance::InitializeBattleMap()
 {
 	FString LevelName = UGameplayStatics::GetCurrentLevelName(GetWorld(), true);
@@ -340,5 +364,74 @@ void UFFYGameInstance::UseInventoryItem_Implementation(FName ID, AFFYBattleChara
 	if (Index > -1)
 	{
 		ItemManager->BattleUse(Inventory[Index], Source, Target);
+	}
+}
+
+void UFFYGameInstance::OverrideCurrentTrack_Implementation(USoundCue* NewTrack, float LoopStartTime, float LoopEndTime)
+{
+	IFFYMusicEvents::OverrideCurrentTrack_Implementation(NewTrack, LoopStartTime, LoopEndTime);
+}
+
+void UFFYGameInstance::LoopPlayback(const USoundWave* PlayingSoundWave, const float PlaybackPercent)
+{
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Black, FString::Printf(TEXT("LoopPlayback: %f"), PlaybackPercent));
+	if (PlaybackPercent > CurrentMusicData.LoopEndPercent && !bIsLoadingAudioPlayback)
+	{
+		bIsLoadingAudioPlayback = true;
+		AudioComponent->Play(CurrentMusicData.LoopStartTime);
+		GetWorld()->GetTimerManager().SetTimer(AudioInitializeHandle, this, &UFFYGameInstance::OnLoopPlaybackTriggered, 0.5f);
+	}
+}
+
+void UFFYGameInstance::OnLoopPlaybackTriggered()
+{
+	bIsLoadingAudioPlayback = false;
+}
+
+void UFFYGameInstance::PlayMusic_Implementation(FMusicData MusicData)
+{
+	if (!AudioComponent)
+	{
+		InitializeMusicPlayer();
+	}
+	if (AudioComponent->OnAudioPlaybackPercent.IsBound())
+	{
+		AudioComponent->OnAudioPlaybackPercent.RemoveAll(this);
+	}
+	if (AudioComponent->IsPlaying())
+	{
+		AudioComponent->Stop();
+	}
+	
+	CurrentMusicData = MusicData;
+		
+	if (CurrentMusicData.MusicTrack)
+	{
+		AudioComponent->SetSound(CurrentMusicData.MusicTrack);
+		
+		if (CurrentMusicData.LoopEndPercent > 0.f)
+		{
+			//BindAudioPlayback();
+			AudioComponent->OnAudioPlaybackPercent.AddUniqueDynamic(this, &UFFYGameInstance::LoopPlayback);
+			/*
+			AudioComponent->OnAudioPlaybackPercentNative.AddLambda([this](const UAudioComponent* Component, const USoundWave* SoundWave, float Time)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Black, FString::Printf(TEXT("LoopPlayback: %f"), Time));
+			});*/
+		}
+		AudioComponent->Play();
+	}
+	
+}
+
+void UFFYGameInstance::StopMusic_Implementation(float FadeOutDuration)
+{
+	if (AudioComponent)
+	{
+		if (AudioComponent->OnAudioPlaybackPercent.IsBound())
+		{
+			AudioComponent->OnAudioPlaybackPercent.RemoveAll(this);
+		}
+		AudioComponent->FadeOut(1.f, 0.f);
 	}
 }

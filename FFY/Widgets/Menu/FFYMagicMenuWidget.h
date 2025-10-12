@@ -18,6 +18,9 @@ class FFY_API UFFYMagicMenuWidget : public UFFYMenuScrollWidget
 
 
 protected:
+	UFUNCTION()
+	void OnConfirmOptionSelected(bool bIsConfirmed);
+	
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 
@@ -59,6 +62,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Widget, meta = (BindWidget))
 	UFFYSelectPartyMemberWidget* SelectionWidget;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Widget, meta = (BindWidget))
+	UFFYConfirmMenuWidget* ConfirmMenuWidget;
+
 	
 public:
 
@@ -66,8 +72,13 @@ public:
 	TSubclassOf<UFFYActionOptionWidget> ActionOptionClass;
 	
 	virtual void LoadContext_Implementation(FName ContextName) override;
+	
 	virtual UFFYSelectPartyMemberWidget* GetSelectionWidget_Implementation() override;
+	
+	virtual UFFYConfirmMenuWidget* GetConfirmWidget_Implementation() override;
+	
 	virtual void ContextRefresh_Implementation(int Index) override;
+	
 	virtual FText GetInputKeyText_Implementation() override
 	{
 		return FText::FromString("<img id=\"LeftMouseButton\"></> = Confirm <img id=\"RightMouseButton\"></> = Cancel <img id=\"Q\"></>/<img id=\"E\"></> = Cycle Members <img id=\"C\"></> = Select All");

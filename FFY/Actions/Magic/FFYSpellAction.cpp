@@ -39,7 +39,7 @@ void AFFYSpellAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFF
 		{
 			ActionOwner->UpdateMotionWarpTransform("MagicCastWarp",
 				ActionOwner->GetActorLocation(),
-				UKismetMathLibrary::FindLookAtRotation(ActionOwner->GetActorLocation(), Targets[0]->GetActorLocation())
+				FRotator(0.0f, UKismetMathLibrary::FindLookAtRotation(ActionOwner->GetActorLocation(), Targets[0]->GetActorLocation()).Yaw, 0.0f)
 				);
 		}
 	}
@@ -62,7 +62,7 @@ void AFFYSpellAction::ExecuteAction(FBattleCharacterData& ActionOwner, FBattleCh
 	Super::ExecuteAction(ActionOwner, Target);
 }
 
-void AFFYSpellAction::DebugLocations(FVector Location1, FVector Normal1, FVector Location2, FVector Normal2)
+void AFFYSpellAction::DebugLocations(FVector Location1, FVector Normal1, FVector Location2, FVector Normal2, bool DrawSpheres)
 {
 	FHitResult StepHitResult(ForceInit);
 	FCollisionQueryParams CollisionTraceParams = FCollisionQueryParams(FName(TEXT("DefaultTrace")), false);

@@ -3,3 +3,9 @@
 
 #include "FFYStatusEffectComponent.h"
 
+void UFFYStatusEffectComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}

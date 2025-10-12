@@ -85,7 +85,7 @@ void AFFYAttackAction::Redirect(AFFYBattleCharacter* ActionOwner, TArray<AFFYBat
 	}
 }
 
-void AFFYAttackAction::DebugLocations(FVector Location1, FVector Normal1, FVector Location2, FVector Normal2)
+void AFFYAttackAction::DebugLocations(FVector Location1, FVector Normal1, FVector Location2, FVector Normal2, bool DrawSpheres)
 {
 	FHitResult StepHitResult(ForceInit);
 	FCollisionQueryParams CollisionTraceParams = FCollisionQueryParams(FName(TEXT("DefaultTrace")), false);
@@ -103,6 +103,31 @@ void AFFYAttackAction::DebugLocations(FVector Location1, FVector Normal1, FVecto
 		20.0f,
 		0U,
 		1.f);
+
+	if (DrawSpheres)
+	{
+		DrawDebugSphere(
+			GetWorld(),
+			Location1,
+			250.f,
+			12,
+			FColor::Green,
+			true,
+			-1,
+			0U,
+			1.f);
+
+		DrawDebugSphere(
+		GetWorld(),
+		Location2,
+		250.f,
+		12,
+		FColor::Purple,
+		true,
+		-1,
+		0U,
+		1.f);
+	}
 
 	return;
 }

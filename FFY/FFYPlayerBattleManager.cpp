@@ -9,6 +9,7 @@
 #include "FFYBattleSpawnTransform.h"
 #include "FFYGameInstance.h"
 #include "Components/WrapBox.h"
+#include "GameFramework/PlayerStart.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Widgets/FFYBattleWidget.h"
 #include "Widgets/FFYActionWidget.h"
@@ -31,24 +32,25 @@ AFFYPlayerBattleManager::AFFYPlayerBattleManager()
 	MainCamera->bUsePawnControlRotation = false;
 }
 
-void AFFYPlayerBattleManager::ChangeDefaultTransform()
-{
-	if (BattleCameraTransforms.Num() > 1)
-	{
-		int RandomIndex = FMath::RandRange(0, BattleCameraTransforms.Num() - 1);
-		DefaultTransform = BattleCameraTransforms[RandomIndex];
-
-		this->SetActorTransform(DefaultTransform);
-	}
-}
-
 // Called when the game starts or when spawned
 void AFFYPlayerBattleManager::BeginPlay()
 {
 	Super::BeginPlay();
 
+	//don't allow input until all setup events have finished
+	DisableInput(GetWorld()->GetFirstPlayerController());
+	
 	//Find and choose initial camera position from list of transform actors
-	DefaultTransform = GetActorTransform();
+	auto* PlayerStart = UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass());
+	if (PlayerStart)
+	{
+		DefaultTransform = PlayerStart->GetActorTransform();
+	}
+	else
+	{
+		DefaultTransform = GetActorTransform();
+	}
+	
 
 	BattleCameraTransforms.Emplace(DefaultTransform);
 	TArray<AActor*> OutActors;
@@ -76,7 +78,9 @@ void AFFYPlayerBattleManager::BeginPlay()
 		//hard cap at 4 active members or number of slots in battle arena
 		for (int i = 0; i < 4 && i < GameInstance->GetParty().Num() && i < SpawnContainer->PartySpawns.Num(); i++)
 		{
-			AFFYBattleCharacter* PartySpawn = GetWorld()->SpawnActor<AFFYBattleCharacter>(GameInstance->GetParty()[i].PartyCharacterData.BattleCharacterClass, SpawnContainer->PartySpawns[i]->GetActorTransform());
+			FActorSpawnParameters SpawnParameters = FActorSpawnParameters();
+			SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+			AFFYBattleCharacter* PartySpawn = GetWorld()->SpawnActor<AFFYBattleCharacter>(GameInstance->GetParty()[i].PartyCharacterData.BattleCharacterClass, SpawnContainer->PartySpawns[i]->GetActorTransform(), SpawnParameters);
 			if (PartySpawn && BattleWidget)
 			{
 				Party.Emplace(PartySpawn);
@@ -89,6 +93,11 @@ void AFFYPlayerBattleManager::BeginPlay()
 				//===============
 				BattleWidget->AddHUDSlot(PartySpawn);
 			}
+			else
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 25.f, FColor::Red, TEXT("ERROR: Failed to spawn party member..."));
+				return;
+			}
 		}
 		BattleWidget->InitializeContextMenu(Party);
 	}
@@ -100,26 +109,25 @@ void AFFYPlayerBattleManager::BeginPlay()
 	{
 		ActionWidget->AddToViewport();
 	}
-	
-	if (BattleWidget)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Black, "BATTLE WIDGET CONSTRUCT");
-		APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-		if (PlayerController)
-		{
-			PlayerController->SetShowMouseCursor(true);
-		}
-
-		if (Party[0])
-		{
-			BattleWidget->LoadBattleContext_Implementation(Party[0]);
-			BattleWidget->AddToViewport();
-		}
-	}
 
 	if (ChainWidget)
 	{
 		ChainWidget->AddToViewport();
+	}
+	
+	GameMode->StartBattle_Implementation();
+}
+
+void AFFYPlayerBattleManager::ChangeDefaultTransform(bool ForceChange)
+{
+	if (BattleCameraTransforms.Num() > 1 || ForceChange)
+	{
+		int RandomIndex = FMath::RandRange(0, BattleCameraTransforms.Num() - 1);
+		DefaultTransform = BattleCameraTransforms[RandomIndex];
+
+		SetActorTransform(DefaultTransform);
+		SetActorRotation(DefaultTransform.Rotator());
+		//GetController()->SetControlRotation(DefaultTransform.Rotator());
 	}
 }
 
@@ -363,7 +371,7 @@ void AFFYPlayerBattleManager::CheckLossCondition(AFFYBattleCharacter* Character)
 	{
 		//loss
 		GEngine->AddOnScreenDebugMessage(-1, 55.f, FColor::Black, "GAME OVER CONDITION: All party members defeated");
-		Defeat();
+		StartDefeat();
 	}
 
 	
@@ -444,6 +452,11 @@ void AFFYPlayerBattleManager::StartVictory()
 	}
 	ChainBonus = FMath::Min( 1.5f,1.f + CurrentChain/50.f);
 	ResetChain_Implementation();
+	IFFYMusicEvents* GameInstance = Cast<IFFYMusicEvents>(GetGameInstance());
+	if (GameInstance)
+	{
+		GameInstance->StopMusic_Implementation(2.5f);
+	}
 	GetWorld()->GetTimerManager().SetTimer(VictoryTimer, this, &AFFYPlayerBattleManager::Victory, 3.f);
 }
 
@@ -451,10 +464,17 @@ void AFFYPlayerBattleManager::Victory()
 {
 	bHasBattleStarted = false;
 
+	StartVictoryCameraAction();
+
 	IFFYBattleEvents* GameInstance = Cast<IFFYBattleEvents>(GetGameInstance());
+	IFFYMusicEvents* GameInstanceMusic = Cast<IFFYMusicEvents>(GetGameInstance());
 	BattleResultsWidget = CreateWidget<UFFYBattleResultsWidget>(GetWorld(), BattleResultsWidgetClass);
 	if (BattleResultsWidget && GameInstance)
 	{
+		if (GameInstanceMusic)
+		{
+			GameInstanceMusic->PlayMusic_Implementation(VictoryMusicData);
+		}
 		
 		BattleResultsWidget->AddToViewport();
 
@@ -487,14 +507,30 @@ void AFFYPlayerBattleManager::Victory()
 
 		BattleResultsWidget->OnResultScreenExit.AddUniqueDynamic(this, &AFFYPlayerBattleManager::BattleEnded);
 	}
-	
-	
+}
 
-
+void AFFYPlayerBattleManager::StartDefeat()
+{
+	if (BattleWidget)
+	{
+		BattleWidget->BattleEnd();
+	}
+	ChainBonus = FMath::Min( 1.5f,1.f + CurrentChain/50.f);
+	ResetChain_Implementation();
+	IFFYMusicEvents* GameInstance = Cast<IFFYMusicEvents>(GetGameInstance());
+	if (GameInstance)
+	{
+		GameInstance->StopMusic_Implementation(4.f);
+	}
+	ActionUsed_Implementation(FName("The party has been defeated..."), false);
+	GetWorld()->GetTimerManager().SetTimer(VictoryTimer, this, &AFFYPlayerBattleManager::Defeat, 3.f);
 }
 
 void AFFYPlayerBattleManager::Defeat()
 {
+	bHasBattleStarted = false;
+
+	OnGameOver(); 
 }
 
 void AFFYPlayerBattleManager::BattleEnded()
@@ -606,6 +642,7 @@ void AFFYPlayerBattleManager::ResetBattleActiveState(EActionState NewActionState
 		{
 			BattleWidget->ActiveModeSwitched(EActiveState::ACTIVE);
 		}
+		OnActiveModeSwitched.Broadcast(EActiveState::ACTIVE);
 	}
 }
 
@@ -641,6 +678,7 @@ void AFFYPlayerBattleManager::SetAllWaitMode(AFFYBattleCharacter* Character)
 	{
 		BattleWidget->ActiveModeSwitched(EActiveState::WAIT);
 	}
+	OnActiveModeSwitched.Broadcast(EActiveState::WAIT);
 }
 
 void AFFYPlayerBattleManager::OnCameraActionSelected(AFFYBattleCharacter* Character,
@@ -672,6 +710,79 @@ void AFFYPlayerBattleManager::UpdateEnemies(TArray<AFFYBattleCharacter*> LoadedE
 				Enemies[i]->OnClash.AddUniqueDynamic(this, &AFFYPlayerBattleManager::OnClashEvent);
 			}
 		}
+		//assign initial ATB values now that all actors are loaded
+		AssignInitiative();
+}
+
+void AFFYPlayerBattleManager::AssignInitiative()
+{
+	//Set ATB to initial values based on Dexterity and rolled Initiative
+	float HighestDex = FindHighestDexterity();
+	for (auto p : Party)
+	{
+		if (p)  //bind
+		{
+			p->ATB = FMath::Clamp(100*(p->BattleCharacterStats.Dexterity/HighestDex) - (20-p->Initiative), 0, 99);
+			p->UpdateATB(0.001f);
+			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Purple, FString::Printf(TEXT("%s: INITIATIVE = %f"), *p->BattleCharacterStats.CharacterName.ToString(), 100*(p->BattleCharacterStats.Dexterity/HighestDex) - (20-p->Initiative)));
+		}
+	}
+		
+	int StartingValues = 1;
+	int HighestValues = 0;
+	float AnchorATB = 0;
+		
+	for (auto e : Enemies)
+	{
+		if (e)
+		{
+			AnchorATB = FMath::Clamp(100*(e->BattleCharacterStats.Dexterity/HighestDex) + (10-e->Initiative * StartingValues), 0, 99);
+			StartingValues++;
+			if (e->BattleCharacterStats.Dexterity == HighestDex)
+			{
+				HighestValues++;
+				if (HighestValues > 1)
+				{
+					AnchorATB = FMath::Clamp(AnchorATB - (15 * (HighestValues-1)), 0, 99);
+				}
+			}
+			e->ATB = AnchorATB;
+			e->UpdateATB(0.001f);
+			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString::Printf(TEXT("%s: INITIATIVE = %f"), *e->BattleCharacterStats.CharacterName.ToString(), AnchorATB));
+		}
+	}
+
+}
+
+void AFFYPlayerBattleManager::OnStartBattle()
+{
+	{
+		if (BattleWidget)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Black, "BATTLE WIDGET CONSTRUCT");
+			APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+			if (PlayerController)
+			{
+				PlayerController->SetShowMouseCursor(true);
+			}
+
+			if (Party[0])
+			{
+				BattleWidget->LoadBattleContext_Implementation(Party[0]);
+				BattleWidget->AddToViewport();
+			}
+			//Enable Battle actions
+			BattleWidget->OnMenuDisplayed.AddLambda([this]()
+			{
+				bHasBattleStarted = true;
+				if (BattleWidget)
+				{
+					BattleWidget->BattleStart();
+				}
+				EnableInput(GetWorld()->GetFirstPlayerController());
+			});
+		}
+	}
 }
 
 void AFFYPlayerBattleManager::ActionUsed_Implementation(FName ActionName, bool bIsEnemy)

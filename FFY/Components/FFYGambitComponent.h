@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "FFY/FFYDataEnums.h"
 #include "FFYGambitComponent.generated.h"
 
 class AFFYBattleCharacter;
@@ -30,17 +31,33 @@ struct FFY_API FGambit
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FName ActionName = FName("None");
 
-	//in case where this gambit is selected, whether to evaluate again or pass to next in list
+	//in case where this gambit is selected, evaluate it once per battle
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool EvaluateOnce = false;
 
-	//if non-zero positive number, target's HP ratio being below this value will return true
+	//how many actions must be performed before gambit can be reevaluated
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int EvaluateCooldown = 0;
+
+	//value to set EvaluateCooldown to after being selected, if negative this gambit will never be evaluated
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int MaxCooldown = 0;
+
+	//if non-zero positive number, user's HP ratio being below this value will return true
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float HPRatioLimit = 0.f;
 
-	//if non-zero positive number, target's HP ratio being above this value will return true
+	//if non-zero positive number, user's HP ratio being above this value will return true
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float HPRatioFloor = 0.f;
+
+	//if non-zero positive number, target's HP ratio being above this value will return true
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float TargetHPRatioLimit = 0.f;
+
+	//if non-zero positive number, target's HP ratio being above this value will return true
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float TargetHPRatioFloor = 0.f;
 
 	//if non-zero positive number, self's MP ratio being below this value will return true
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -58,9 +75,9 @@ struct FFY_API FGambit
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	uint8 NumAllies = 0;
 
-	//if true and action selected can TargetAll, will use TargetAll
+	//if Both and action can be both single/multi target selectable, will randomize selection type
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bTargetAll = false;
+	ETargetType TargetType = ETargetType::SINGLE;
 
 	//if true, characters with KO status cannot be targeted
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -123,7 +140,7 @@ public:
 	
 	//list of gambits that controlled member will evaluate
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Default", meta=(AllowPrivateAccess=true))
-	TArray<FGambit> Gambits; 
+	TArray<FGambit> Gambits;
 
 
 	//===============

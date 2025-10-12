@@ -87,12 +87,33 @@ void UFFYActionOptionWidget::PerformAction()
 	{
 		return;
 	}
-	
-	OwnerMenu->StartSelection_Implementation(this, Action->TargetType);
+	if (Action->Type == 3)
+	{
+		OwnerMenu->SetConfirmMenuText_Implementation(FText::FromString(FString::Printf( TEXT("Cast <Highlight>%s</>?"), *Action->GetMenuLabel().ToString())));
+		OwnerMenu->StartConfirmation_Implementation(Action->GetMenuLabel());
+	}
+	else
+	{
+		OwnerMenu->StartSelection_Implementation(this, Action->TargetType);
+	}
 }
 
 void UFFYActionOptionWidget::ContextAction_Implementation(UFFYPartyMemberOptionWidget* CharacterWidget, bool SelectAll)
 {
+	
+	if (Action->Type == 3) //has custom overworld implementation
+	{
+		UFFYGameInstance* GameInstance = Cast<UFFYGameInstance>(GetWorld()->GetGameInstance());	
+		TArray<FPartySlot>& Party = GameInstance->GetParty();
+
+		FBattleCharacterData& User = Party[UserIndex].PartyCharacterData;
+		User.MP = FMath::Max(0.f, User.MP - Action->MPCost);
+		OwnerMenu->ContextRefresh_Implementation(UserIndex);
+		
+		return;
+	}
+
+	
 	FName CharacterName = CharacterWidget->GetCharacterName();
 	
 	UFFYGameInstance* GameInstance = Cast<UFFYGameInstance>(GetWorld()->GetGameInstance());
@@ -113,6 +134,7 @@ void UFFYActionOptionWidget::ContextAction_Implementation(UFFYPartyMemberOptionW
 				bool Exit = !(Action->CanCast(User));
 				if (Exit)
 				{
+					CharacterWidget->GetOwnerMenu()->ContextRefresh_Implementation(0);
 					OwnerMenu->EndSelection_Implementation();
 					OwnerMenu->ContextRefresh_Implementation(UserIndex);
 				}

@@ -92,7 +92,7 @@ void AFFYInteractableActor::OnOverlapBegin(class UPrimitiveComponent* Overlapped
 {
 	ACharacter* Character = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("Player overlaps"));
-	if (OtherActor == Character) 
+	if (OtherActor == Character && CheckInteraction(this)) 
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("Player is valid "));
 		IFFYInteraction* InteractingCharacter = Cast<IFFYInteraction>(Character);

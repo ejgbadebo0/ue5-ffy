@@ -6,13 +6,10 @@
 #include "FFYAnimationControls.h"
 #include "FFYGameInstance.h"
 #include "FFY/Components/FFYGambitComponent.h"
-#include "FindInBlueprints.h"
 #include "Components/WidgetComponent.h"
 #include "NiagaraComponent.h"
 #include "Components/FFYStatusEffectComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Notify/FFYElementalNiagaraEffectState.h"
-#include "Slate/SGameLayerManager.h"
 #include "Widgets/Option/FFYBattleCharacterOptionWidget.h"
 
 // Sets default values
@@ -387,21 +384,52 @@ void AFFYBattleCharacter::OnParry()
 	}
 }
 
-void AFFYBattleCharacter::PruneStatusEffects()
+bool AFFYBattleCharacter::EvaluateOnHitStatusEffects(const FDamageAttributes& SourceDamage)
 {
-	if (BattleCharacterStats.StatusEffects.IsEmpty())
+	bool ShouldExit = false; //if should exit previous damage event
+	
+	TArray<EStatusEffect> CheckEffects = { EStatusEffect::BARRIER }; //add as functionality for nullifying effects are added
+
+	if (BattleCharacterStats.StatusEffects.Num() > 0)
+	{
+		for (auto s : BattleCharacterStats.StatusEffects)
+		{
+			if (CheckEffects.Contains(s))
+			{
+				switch (s)
+				{
+				case EStatusEffect::BARRIER:
+						if (SourceDamage.AttackType == EAttackType::MELEE || SourceDamage.DamageModifier == EDamageModifier::PHYSICAL)
+						{
+							ShouldExit = true;
+							OnBarrierActivated();	
+						}
+						break;
+				}
+			}
+		}
+	}
+
+	return ShouldExit;
+}
+
+void AFFYBattleCharacter::PruneStatusEffectsOnKO()
+{
+	BattleCharacterStats.StatusEffects.Emplace(EStatusEffect::KO);
+	
+	if (BattleCharacterStats.StatusEffects.Num() == 1)
 	{
 		return;
 	}
-	for (auto s : BattleCharacterStats.StatusEffects)
+	for (int i = 0; i < BattleCharacterStats.StatusEffects.Num() - 1; i++)
 	{
-		if (s != EStatusEffect::KO)
+		if (BattleCharacterStats.StatusEffects[i] != EStatusEffect::KO)
 		{
 			if (StatusEffectComponent)
 			{
-				StatusEffectComponent->RemoveEffect(s);
+				StatusEffectComponent->RemoveEffect(BattleCharacterStats.StatusEffects[i]);
 			}
-			BattleCharacterStats.StatusEffects.RemoveSingle(s);
+			BattleCharacterStats.StatusEffects.RemoveAt(i);
 		}
 	}
 }
@@ -460,24 +488,47 @@ FDamageEventResult AFFYBattleCharacter::InflictDamage(const FDamageAttributes& S
 				: 1.f; //take full damage if not defending
 	
 	//GEngine->AddOnScreenDebugMessage(-1, 35.f, FColor::Red, FString::Printf(TEXT("Defend: %f"), DefendModifier ));
+	float ElementModifier = (BattleCharacterStats.Weaknesses.Contains(SourceDamage.DamageElement)) ? 1.5f : 1.f;
+	ElementModifier = (BattleCharacterStats.Resistances.Contains(SourceDamage.DamageElement)) ? 0.25f : ElementModifier;
 	
 	//modifier for damage amount based on difference in levels
 	float LevelDamageModifier =  (SourceDamage.DamageAmount != 0.f) ? SourceDamage.DamageAmount + ((SourceLevel - BattleCharacterStats.LV) * 2) : 0.f; 
 	//GEngine->AddOnScreenDebugMessage(-1, 35.f, FColor::Red, FString::Printf(TEXT("LevelDmgModifier: %f"), LevelDamageModifier ));
 	
-	float FinalDamage = FMath::Floor(FMath::Clamp(((LevelDamageModifier - StatModifier) * DefendModifier) * CritDmgModifier, 0.f, DamageCap));
+	float FinalDamage = FMath::Floor(FMath::Clamp(((LevelDamageModifier - StatModifier) * DefendModifier) * CritDmgModifier * ElementModifier, 0.f, DamageCap));
 	//GEngine->AddOnScreenDebugMessage(-1, 35.f, FColor::Red, FString::Printf(TEXT("DAMAGE CALC: (%f - %f) * %f = %f"), LevelDamageModifier, StatModifier, DefendModifier, FinalDamage ));
 	//GEngine->AddOnScreenDebugMessage(-1, 35.f, FColor::Red, FString::Printf(TEXT("FinalDamage: %f"), FinalDamage ));
 	//GEngine->AddOnScreenDebugMessage(-1, 35.f, FColor::Orange, "=========================" );
 
+	if (EvaluateOnHitStatusEffects(SourceDamage)) //evaluate buffs that nullify/absorb damage
+	{
+		return FDamageEventResult(true,
+		bIsCrit,
+		false,
+		PerfectDefense,
+		0,
+		FText(),
+		SourceDamage);
+	};
+	
+	if (BattleCharacterStats.Catalysts.Contains(SourceDamage.DamageElement)) //switch damage amount to healing if element is naturally absorb-able
+	{
+		return FDamageEventResult(true,
+		bIsCrit,
+		true,
+		PerfectDefense,
+		FinalDamage,
+		FText::FromString("Absorb"),
+		SourceDamage);
+	}
+	
     float PreDamageHPRatio = (BattleCharacterStats.HP/BattleCharacterStats.MaxHP);
 	//DEAL FINAL DAMAGE ==========================================
 	BattleCharacterStats.HP = FMath::Max(BattleCharacterStats.HP - FinalDamage, (PerfectDefense) ? 1.f : 0.0f);
 	
 	if (BattleCharacterStats.HP <= 0)
 	{
-		PruneStatusEffects();
-		BattleCharacterStats.StatusEffects.Emplace(EStatusEffect::KO);
+		PruneStatusEffectsOnKO();
 		
 		FTextFormat FMT = FTextFormat::FromString("{Previous}<Fatal>KO</>\n");
 		FFormatNamedArguments Args;
@@ -537,6 +588,11 @@ FDamageEventResult AFFYBattleCharacter::InflictDamage(const FDamageAttributes& S
 		if ((BattleCharacterStats.HP/BattleCharacterStats.MaxHP) <= 0.25f && PreDamageHPRatio > 0.25f)
 		{
 			OnCharacterWeakened.Broadcast(this);
+		}
+		//alert that damage has been taken
+		if ((BattleCharacterStats.HP/BattleCharacterStats.MaxHP) < PreDamageHPRatio)
+		{
+			OnCharacterDamageTaken.Broadcast();
 		}
 	}
 	//=============================================================
@@ -679,8 +735,15 @@ bool AFFYBattleCharacter::ReceiveDamage_Implementation(
 		case EDamageModifier::MAGIC: //magic attacks will always hit for now
 
 			DamageEventResult = InflictDamage(SourceDamageAttributes, Source->BattleCharacterStats.LV, 0);
-			DamageTakenEvent(DamageEventResult);
-			return true;
+			if (!DamageEventResult.bIsHealing) //did character heal from attack's element
+			{
+				DamageTakenEvent(DamageEventResult);
+				return true;
+			}
+			else
+			{
+				return ReceiveHealing_Implementation(Source, SourceAction);	
+			}
 		
 		case EDamageModifier::PHYSICAL:
 			if (SourceDamageAttributes.DamageAmount > 0)
@@ -711,12 +774,18 @@ bool AFFYBattleCharacter::ReceiveDamage_Implementation(
 
 					DamageEventResult = InflictDamage(SourceDamageAttributes, Source->BattleCharacterStats.LV, CritModifier);
 					DamageEventResult.SourceLocation = Source->GetActorLocation();
-					DamageTakenEvent(DamageEventResult);
-					return true;
+					if (!DamageEventResult.bIsHealing) //did character heal from attack's element
+					{
+						DamageTakenEvent(DamageEventResult);
+						return true;
+					}
+					else
+					{
+						return ReceiveHealing_Implementation(Source, SourceAction);	
+					}
 				}
 				break;
 			}
-		
 	}
 
 	//reached due to miss
@@ -757,9 +826,7 @@ bool AFFYBattleCharacter::ReceiveHealing_Implementation(AFFYBattleCharacter* Sou
 	
 	switch (HealingEffectType)
 	{
-	default:
-		return false;
-	case EElement::HEALING: //purely healing
+	default: //purely healing
 		//determine if not in a heal-able state
 		if (BattleCharacterStats.StatusEffects.Contains(EStatusEffect::KO) || BattleCharacterStats.StatusEffects.Contains(EStatusEffect::PETRIFY))
 		{
@@ -802,6 +869,14 @@ bool AFFYBattleCharacter::ReceiveHealing_Implementation(AFFYBattleCharacter* Sou
 				if (StatusEffectComponent)
 				{
 					StatusEffectComponent->RemoveEffect(s);
+				}
+				if (s == EStatusEffect::KO)
+				{
+					IFFYAnimationControls* Instance = Cast<IFFYAnimationControls>(AnimInstance);
+					if (Instance)
+					{
+						Instance->PlayActionMontage_Implementation(FName("KORecover"), false);
+					}
 				}
 				RemoveResult = true;
 			}

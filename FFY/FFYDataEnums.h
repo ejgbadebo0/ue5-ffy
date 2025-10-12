@@ -23,6 +23,7 @@ enum class EMenuMode : uint8
 {
 	NONE UMETA(DisplayName = "None"),
 	SELECTING UMETA(DisplayName = "Selecting"),
+	CONFIRMING UMETA(DisplayName = "Confirming"),
 	E_MAX UMETA(Hidden)
 };
 
@@ -63,6 +64,32 @@ enum class EStatusEffect : uint8
 	STAGGER UMETA(DisplayName = "Stagger"),
 	KO UMETA(DisplayName = "KO"),
 	//Positive
+	REGEN UMETA(DisplayName = "Regen"),
+	VEIL UMETA(DisplayName = "Veil"),
+	BRAVERY UMETA(DisplayName = "Bravery"),
+	FAITH UMETA(DisplayName = "Faith"),
+	PROTECT UMETA(DisplayName = "Protect"),
+	SHELL UMETA(DisplayName = "Shell"),
+	BARRIER UMETA(DisplayName = "Barrier"),
+	//Element based buffs
+	NULFIRE UMETA(DisplayName = "Nulfire"),
+	NULICE UMETA(DisplayName = "Nulice"),
+	NULTHUNDER UMETA(DisplayName = "Nulthunder"),
+	NULWATER UMETA(DisplayName = "Nulwater"),
+	NULAIR UMETA(DisplayName = "Nulair"),
+	NULEARTH UMETA(DisplayName = "Nulearth"),
+	NULLIGHT UMETA(DisplayName = "Nullight"),
+	NULDARK UMETA(DisplayName = "Nuldark"),
+	NULCOSMO UMETA(DisplayName = "Nulcosmo"),
+	CATAFIRE UMETA(DisplayName = "Catafire"),
+	CATALICE UMETA(DisplayName = "Catalice"),
+	CATATHUNDER UMETA(DisplayName = "Catathunder"),
+	CATAWATER UMETA(DisplayName = "Catawater"),
+	CATALAIR UMETA(DisplayName = "Catalair"),
+	CATAEARTH UMETA(DisplayName = "Cataearth"),
+	CATALIGHT UMETA(DisplayName = "Catalight"),
+	CATADARK UMETA(DisplayName = "Catadark"),
+	CATACOSMO UMETA(DisplayName = "Catacosmo"),
 	E_MAX UMETA(Hidden)
 };
 

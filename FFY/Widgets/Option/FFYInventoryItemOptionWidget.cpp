@@ -76,10 +76,10 @@ void UFFYInventoryItemOptionWidget::ContextAction_Implementation(UFFYPartyMember
 		TArray<FPartySlot>& Party = GameInstance->GetParty();
 		for (int i = 0; i < Party.Num(); i++)
 		{
-			if (Party[i].PartyCharacterData.CharacterName == CharacterName)
+			if (Party[i].PartyCharacterData.CharacterName == CharacterName || SelectAll)
 			{
 				int Index = GameInstance->FindInventoryItemIndex(InventoryItem.ID);
-				GameInstance->ItemManager->Use(GameInstance->Inventory[Index], Party[i].PartyCharacterData);
+				GameInstance->ItemManager->Use(GameInstance->Inventory[Index], Party[i].PartyCharacterData, (i == Party.Num()-1) || !SelectAll);
 
 				int Used = GameInstance->FindInventoryItemIndex(InventoryItem.ID);
 				if (Used == -1)

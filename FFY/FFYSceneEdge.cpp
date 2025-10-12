@@ -48,7 +48,7 @@ void AFFYSceneEdge::OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, clas
 	if (OtherActor && (OtherActor == PlayerActor)) 
 	{
 		//GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Green, TEXT("VALID COLLISION"));
-		FVector PlayerDistance = PlayerActor->GetActorLocation() - SceneArrow->GetComponentLocation();
+		FVector PlayerDistance = PlayerActor->GetActorLocation() - GetActorLocation();
 		PlayerDistance.Normalize();
 	
 		float TransferDot = FVector::DotProduct(SceneArrow->GetForwardVector(), FVector(PlayerDistance.X, PlayerDistance.Y, 0.0) );

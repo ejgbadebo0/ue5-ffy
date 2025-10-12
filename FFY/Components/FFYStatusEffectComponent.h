@@ -18,8 +18,12 @@ class FFY_API UFFYStatusEffectComponent : public UWidgetComponent
 {
 	GENERATED_BODY()
 
-
+protected:
+	// Called when the game starts
+	virtual void BeginPlay() override;
+	
 public:
+
 	//DELEGATES:
 	FOnKOEffectFinished OnKOEffectFinished;
 	//========

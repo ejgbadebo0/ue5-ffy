@@ -55,6 +55,22 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void EndSelection();
 
+	//execute logic based on exit conditions
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void EndConfirmation(bool bIsConfirmed, bool bShouldExitMenu);
+
+	//Called on menu from button press
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void StartConfirmation(FName CallbackName);
+
+	//Called on Confirm menu widgets
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void SetConfirmMenuText(const FText& Text);
+
+	//called on GameInstance to get function name on unpause
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	FName GetConfirmCallbackName();
+
 	//Custom functionality based on a Selected party member button pressed
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void ContextAction(UFFYPartyMemberOptionWidget* CharacterWidget, bool SelectAll);

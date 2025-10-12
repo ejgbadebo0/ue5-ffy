@@ -199,7 +199,7 @@ void AFFYAction::FreeUse(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattleChar
 	ActionOwner->OnFreeActionUse();
 }
 
-void AFFYAction::DebugLocations(FVector Location1, FVector Normal1, FVector Location2, FVector Normal2)
+void AFFYAction::DebugLocations(FVector Location1, FVector Normal1, FVector Location2, FVector Normal2, bool DrawSpheres)
 {
 	return;
 }

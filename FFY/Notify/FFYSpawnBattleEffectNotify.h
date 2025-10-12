@@ -30,11 +30,7 @@ public:
 	
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
 		const FAnimNotifyEventReference& EventReference) override;
-
-	virtual bool ShouldFireInEditor() override
-	{
-		return false;
-	}
+	
 };
 
 inline void UFFYSpawnBattleEffectNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)

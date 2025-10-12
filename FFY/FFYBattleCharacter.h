@@ -43,6 +43,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnClash, AFFYBattleCharacter*, Char
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCharacterDead, AFFYBattleCharacter*, Character);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnContextCommandActivated, AFFYBattleCharacter*, Character);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnContextCommandDeactivated, AFFYBattleCharacter*, Character);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCharacterDamageTaken);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCharacterWeakened, AFFYBattleCharacter*, Character);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCameraActionSelected, AFFYBattleCharacter*, Character, FCameraActionContainer, CameraActionContainer);
 
@@ -97,6 +98,7 @@ public:
 	AFFYBattleCharacter();
 
 	//DELEGATES:
+	UPROPERTY(BlueprintAssignable)
 	FOnCharacterStatsChanged OnCharacterStatsChanged;
 	UPROPERTY(BlueprintAssignable)
 	FOnCharacterDefeated OnCharacterDefeated;
@@ -117,6 +119,8 @@ public:
 	FOnContextCommandActivated OnContextCommandActivated;
 	FOnContextCommandDeactivated OnContextCommandDeactivated;
 	FOnCharacterWeakened OnCharacterWeakened;
+	UPROPERTY(BlueprintAssignable)
+	FOnCharacterDamageTaken OnCharacterDamageTaken;
 	FOnCameraActionSelected OnCameraActionSelected;
 	
 
@@ -383,6 +387,9 @@ public:
 	void OnPerfectEvade();
 
 	UFUNCTION(BlueprintImplementableEvent)
+	void OnBarrierActivated();
+
+	UFUNCTION(BlueprintImplementableEvent)
 	void EnemyKOEvent();
 	
 	//INTERFACE ========================================:
@@ -392,6 +399,9 @@ public:
 		OnActionSelected.Broadcast(SelectedAction, false, 0.f);
 	}
 	// --- Battle:
+
+	
+	bool EvaluateOnHitStatusEffects(const FDamageAttributes& SourceDamage);
 
 	virtual void EvaluateStatusEffects_Implementation() override
 	{
@@ -430,13 +440,14 @@ public:
 
 	virtual bool PositionCheck_Implementation(float Distance) override
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("POSITION CHECK: %f"), FVector::Dist2D(GetActorLocation(), DefaultTransform.GetLocation())));
 		return (FVector::Dist2D(GetActorLocation(), DefaultTransform.GetLocation()) < Distance);
 	}
 
 	//==========================
 
 
-	void PruneStatusEffects();
+	void PruneStatusEffectsOnKO();
 
 	FDamageEventResult InflictDamage(const FDamageAttributes& SourceDamage, int SourceLevel, float CriticalModifier);
 

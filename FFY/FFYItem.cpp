@@ -105,19 +105,21 @@ void UFFYItem::ModifyStats(FItemData& Item, FBattleCharacterData& Target, float 
 	}
 }
 
-void UFFYItem::Use(FItemData& Item, FBattleCharacterData& Target)
+void UFFYItem::Use(FItemData& Item, FBattleCharacterData& Target, bool LastIndex)
 {
 
 	EItemFuncCode Code = Item.ItemFuncCode;
 	
-	FItemUseResult Result = ItemEffect(Code, Target);
-	if (Result.bWasUsed)
+	FItemUseResult Result; 
+	Result = ItemEffect(Code, Target);
+			
+	if (Result.bWasUsed && LastIndex)
 	{
 		DecrementItem(Item);
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, TEXT("ItemUse failed..."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, (LastIndex) ? TEXT("ItemUse failed...") : TEXT("Iterating multi-target item..."));
 	}
 	
 }

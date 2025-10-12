@@ -11,6 +11,7 @@
 //----
 #include "FFYMenuWidget.generated.h"
 
+class UFFYConfirmMenuWidget;
 class UFFYSelectPartyMemberWidget;
 enum class EMenuMode : uint8;
 enum class ETargetType : uint8;
@@ -140,6 +141,9 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	UFFYSelectPartyMemberWidget* GetSelectionWidget();
 
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	UFFYConfirmMenuWidget* GetConfirmWidget();
+
 	UFUNCTION(BlueprintCallable)
 	void ExecuteContextAction(UFFYPartyMemberOptionWidget* CharacterWidget, bool SelectAll);
 	
@@ -159,6 +163,12 @@ public:
 	virtual void EndSelection_Implementation() override;
 	
 	virtual void StartSelection_Implementation(UFFYOptionWidget* SelectedOption, ETargetType SelectedTargetType) override;
+
+	virtual void EndConfirmation_Implementation(bool bIsConfirmed, bool bShouldExitMenu) override;
+	
+	virtual void StartConfirmation_Implementation(FName CallbackName) override;
+
+	virtual void SetConfirmMenuText_Implementation(const FText& Text) override;
 
 	virtual void PlayMenuSound_Implementation(uint8 SoundIndex) override;
 

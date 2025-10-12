@@ -49,7 +49,7 @@ public:
 
 	void ModifyStats(FItemData& Item, FBattleCharacterData& Target, float Value = 1.f);
 	
-	virtual void Use(FItemData& Item, FBattleCharacterData& Target);
+	virtual void Use(FItemData& Item, FBattleCharacterData& Target, bool LastIndex = true);
 
 	virtual void BattleUse(FItemData& Item, AFFYBattleCharacter* User, AFFYBattleCharacter* Target);
 

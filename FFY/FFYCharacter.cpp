@@ -18,6 +18,7 @@
 #include "InputActionValue.h"
 #include "Chaos/Utilities.h"
 #include "Components/WidgetComponent.h"
+#include "Misc/OutputDeviceNull.h"
 #include "Widgets/FFYMessageWidget.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
@@ -69,7 +70,7 @@ AFFYCharacter::AFFYCharacter()
 	//-------------
 	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
 
-	LedgeTraceOffset = GetCharacterMovement()->MaxStepHeight + 1.0f;
+	LedgeTraceOffset = GetCharacterMovement()->MaxStepHeight + 23.f;
 	LastCameraRotation = FRotator::ZeroRotator;
 }
 
@@ -138,6 +139,19 @@ void AFFYCharacter::OnRepossess()
 	{
 		//GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, TEXT("CALLING INITCAMERA FUNC"));
 		GameMode->InitSceneCameras();	
+	}
+	
+	if (GameInstance)
+	{
+		FName CallbackName = GameInstance->GetConfirmCallbackName_Implementation();
+		if (CallbackName != NAME_None)
+		{
+			UFunction* Function = this->FindFunction(CallbackName);
+			if (Function)
+			{
+				this->ProcessEvent(Function, nullptr);
+			}
+		}
 	}
 	//timer handle that was used is reused from preserve movement.
 	GetWorld()->GetTimerManager().ClearTimer(PMDTimerHandle);

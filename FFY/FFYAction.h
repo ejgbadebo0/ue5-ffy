@@ -51,7 +51,7 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	FText Description = FText::GetEmpty();
 
-	/* 0 - CombatOnly 1 - Magic/Combat&Menu 2 - MenuOnly */
+	/* 0 - CombatOnly 1 - Magic/Combat&Menu 2 - MenuOnly  3 - Magic/Combat&Menu (Custom Logic for overworld) */
 	UPROPERTY(EditDefaultsOnly)
 	uint8 Type = 0;
 
@@ -206,7 +206,7 @@ public:
 	 */
 	virtual void FreeUse(AFFYBattleCharacter* ActionOwner, TArray<AFFYBattleCharacter*> Targets);
 
-	virtual void DebugLocations(FVector Location1, FVector Normal1, FVector Location2, FVector Normal2);
+	virtual void DebugLocations(FVector Location1, FVector Normal1, FVector Location2, FVector Normal2, bool DrawSpheres = false);
 
 	/*
 	 * In cases where action is used on invalid/dead target.

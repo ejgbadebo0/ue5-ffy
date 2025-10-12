@@ -25,5 +25,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void PlayActionMontage(FName Signature, bool bIsMultiTarget);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void SetOverrideIdleAnimation(bool bIsActive);
 	
 };
