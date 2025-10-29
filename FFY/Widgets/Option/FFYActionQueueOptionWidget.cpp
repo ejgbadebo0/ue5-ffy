@@ -103,9 +103,13 @@ void UFFYActionQueueOptionWidget::Unload()
 		{
 			CharacterReference->OnActiveStateChanged.RemoveDynamic(this, &UFFYActionQueueOptionWidget::ExecuteActionFromWait);
 		}
+		CharacterReference->OnActionStateChanged.RemoveDynamic(this, &UFFYActionQueueOptionWidget::ExecuteActionFromState);
 		CharacterReference->OnATBValueChanged.RemoveDynamic(this, &UFFYActionQueueOptionWidget::ExecuteAction);
+		
 		CharacterReference = nullptr;
-
+		QueueAction = nullptr;
+		QueueTargets.Empty();
+		
 		OnDequeue.Broadcast();
 		Super::Unload();
 	}

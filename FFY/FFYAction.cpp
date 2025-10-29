@@ -70,7 +70,7 @@ void AFFYAction::ExecuteAction(AFFYBattleCharacter* ActionOwner, TArray<AFFYBatt
 		if (ActionOwner->ActionState == EActionState::DEFENDING && ActionType != EActionType::STATE)  
 		{
 			//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Silver, "ACTION OWNER VALID");
-			ActionOwner->ActionState = EActionState::IDLE;
+			ActionOwner->SetActionState_Implementation(EActionState::IDLE, false);
 		}
 		//Play animation tied to this action
 		IFFYAnimationControls* AnimInstance = Cast<IFFYAnimationControls>(ActionOwner->AnimInstance);

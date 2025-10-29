@@ -36,6 +36,7 @@ public:
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = Action)
 	AFFYAction* Action;
+	
 	virtual void SetIsDisabled(bool Value) override;
 	virtual FText GetDescription() override;
 	virtual void OnSelected() override;
