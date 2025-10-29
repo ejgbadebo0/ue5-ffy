@@ -10,4 +10,4 @@ A video demonstration of the project's current progress can be found at
 this link: 
 
   
-[YouTube Link](https://www.youtube.com/watch?v=gge8E0cU60w&t=1s)
+[YouTube Link](https://www.youtube.com/watch?v=gge8E0cU60w)
